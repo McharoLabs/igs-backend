@@ -1,0 +1,1 @@
+from .detail_response_serializer import DetailResponseSerializer
