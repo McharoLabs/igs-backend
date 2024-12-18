@@ -28,7 +28,43 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = MyUserManager()
 
     USERNAME_FIELD = "username"
-    REQUIRED_FIELDS = ['phone_number', 'email']
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'email', 'phone_number']
     
     class Meta:
         db_table = 'user'
+        
+    @staticmethod
+    def check_if_username_exists(username: str) -> bool:
+        """Method to check if the user with given username exists in the database
+
+        Args:
+            username (str): Username of the user
+
+        Returns:
+            bool: Return true if the user exists in the database, otherwise false
+        """
+        return User.objects.filter(username=username).first()
+    
+    @staticmethod
+    def check_if_email_exists(email: str) -> bool:
+        """Method to check if te user exists in the database with given email
+
+        Args:
+            email (str): Email of the user
+
+        Returns:
+            bool: Returns true if the user exists in the database, otherwise false
+        """
+        return User.objects.filter(email=email).first()
+    
+    @staticmethod
+    def check_if_phone_number_exists(phone_number: str) -> bool:
+        """Method to check if the phone number of the user already exists in the database
+
+        Args:
+            phone_number (str): User phone number
+
+        Returns:
+            bool: Returns true if the user phone number already exists in the database, otherwise false
+        """
+        return User.objects.filter(phone_number=phone_number).first()

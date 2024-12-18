@@ -1,0 +1,2 @@
+from .agent_view import AgentRegistrationView
+from .tenant_view import TenantRegistrationView

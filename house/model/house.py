@@ -3,12 +3,12 @@ from django.db import models
 
 from location.model.location import Location
 from user.model.agent import Agent
-from user.model.landlord import Landlord
+from user.model.landlord import LandLord
 
 class House(models.Model):
     house_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     agent = models.ForeignKey(Agent, on_delete=models.SET_NULL, null=True, related_name="houses")
-    landlord = models.ForeignKey(Landlord, on_delete=models.SET_NULL, null=True, related_name="houses")
+    landlord = models.ForeignKey(LandLord, on_delete=models.SET_NULL, null=True, related_name="houses")
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="houses")
     title = models.CharField(max_length=255)
     description = models.TextField()

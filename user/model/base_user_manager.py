@@ -2,7 +2,7 @@ from django.contrib.auth.models import BaseUserManager
 from django.db import transaction
 
 class MyUserManager(BaseUserManager):
-    def create_user(self, username, email=None, phone_number=None, password=None, **extra_fields):
+    def create_user(self, first_name: str, last_name: str, username: str, middle_name:str = None, email: str=None, phone_number: str=None, password: str=None, **extra_fields):
         """
         Creates and saves a regular user with the given username, email, phone number, and password.
         """
@@ -19,9 +19,13 @@ class MyUserManager(BaseUserManager):
 
         # Create User instance
         user = self.model(
+            first_name=first_name,
+            middle_name=middle_name,
+            last_name=last_name,
             phone_number=phone_number,
             username=username,
             email=email,
+            verified=True,
             **extra_fields
         )
         user.set_password(password)
@@ -30,7 +34,7 @@ class MyUserManager(BaseUserManager):
         return user
 
     @transaction.atomic
-    def create_superuser(self, username, email=None, phone_number=None, password=None, **extra_fields):
+    def create_superuser(self, first_name, last_name, username, middle_name=None, email=None, phone_number=None, password=None, **extra_fields):
         """
         Creates and saves a superuser with the given username, email, phone number, and password.
         """
@@ -47,6 +51,9 @@ class MyUserManager(BaseUserManager):
 
         # Create user and corresponding UserAuth
         return self.create_user(
+            first_name=first_name,
+            middle_name=middle_name,
+            last_name=last_name,
             username=username,
             email=email,
             phone_number=phone_number,

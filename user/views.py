@@ -1,3 +1,3 @@
-from django.shortcuts import render
-
-# Create your views here.
+from .view.agent_view import *
+from .view.tenant_view import *
+from .view.landlord_view import *
