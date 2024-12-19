@@ -1,6 +1,8 @@
+from decimal import Decimal, InvalidOperation
 import uuid
 from django.db import models
 
+from house.enums.category import CATEGORY
 from location.model.location import Location
 from user.model.agent import Agent
 from user.model.landlord import LandLord
@@ -14,12 +16,12 @@ class House(models.Model):
     agent = models.ForeignKey(Agent, on_delete=models.SET_NULL, null=True, related_name="houses")
     landlord = models.ForeignKey(LandLord, on_delete=models.SET_NULL, null=True, related_name="houses")
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="houses")
+    category = models.CharField(max_length=20, choices=[(c.value, c.name) for c in CATEGORY], default=CATEGORY.SALE.value, null=False, blank=False)
     title = models.CharField(max_length=255)
     description = models.TextField()
     price_unit = models.CharField(max_length=50)
     condition = models.CharField(max_length=100)
     nearby_facilities = models.TextField()
-    category = models.CharField(max_length=50)
     utilities = models.TextField()
     security_features = models.TextField()
     heating_cooling_system = models.CharField(max_length=255)
@@ -62,7 +64,7 @@ class House(models.Model):
         location: Location,
         title: str,
         description: str,
-        price_unit: str,
+        price_unit: Decimal,
         condition: str,
         nearby_facilities: str,
         category: str,
@@ -103,13 +105,21 @@ class House(models.Model):
             str: Message indicating whether the house was successfully added.
         """
         
+        if category not in [c.value for c in CATEGORY]:
+            raise ValueError(f"Invalid category '{category}'. Valid options are {[c.value for c in CATEGORY]}.")
+        
+        try:
+            price_unit_decimal = Decimal(price_unit)
+        except InvalidOperation:
+            raise ValueError(f"Invalid price unit '{price_unit}'. It must be a valid decimal number.")
+        
         house = cls(
             agent=agent,
             landlord=landlord,
             location=location,
             title=title,
             description=description,
-            price_unit=price_unit,
+            price_unit=price_unit_decimal,
             condition=condition,
             nearby_facilities=nearby_facilities,
             category=category,

@@ -1,3 +1,4 @@
+from decimal import InvalidOperation
 from typing import cast
 from rest_framework import viewsets, permissions, status
 from authentication.custom_permissions import *
@@ -10,8 +11,9 @@ from location.models import District
 from location.models import Location
 from shared.seriaizers import DetailResponseSerializer
 import logging
+from django.db.models import Q
+from rest_framework.pagination import PageNumberPagination
 
-from user.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +35,9 @@ class HouseViewSet(viewsets.ModelViewSet):
             permission_classes = [permissions.AllowAny]
         
         return [permission() for permission in permission_classes]
+    
+    def get_queryset(self):
+        return super().get_queryset()
 
     @swagger_auto_schema(
         operation_description="Add a new house by providing the necessary details such as agent, landlord, location, price, etc.",
@@ -89,6 +94,13 @@ class HouseViewSet(viewsets.ModelViewSet):
             )
             response_serializer = DetailResponseSerializer({"detail": response_message})
             return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+        except ValueError as e:
+            logger.error(f"Validation error occurred: {e}", exc_info=True)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        except InvalidOperation as e:
+            logger.error(f"Invalid price unit: {e}", exc_info=True)
+            return Response({"detail": "Price unit must be a valid decimal number."}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             logger.error(f"Unexpected error occurred: {e}", exc_info=True)
             return Response({"detail": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -122,3 +134,43 @@ class HouseViewSet(viewsets.ModelViewSet):
         houses = House.get_all_houses()
         serializer = ResponseHouseSerializer(houses, many=True)
         return Response(serializer.data)
+    
+    @swagger_auto_schema(
+        operation_description="List filtered houses",
+        operation_summary="Filtered Houses",
+        method="get",
+        tags=["House"],
+        responses={200: ResponseHouseSerializer(many=True)},
+    )
+    @action(detail=False, methods=['get'])
+    def filter_houses(self, request):
+        filters = Q()
+        
+        category = request.query_params.get('category')
+        region = request.query_params.get('region')
+        district = request.query_params.get('district')
+        min_price = request.query_params.get('minPrice')
+        max_price = request.query_params.get('maxPrice')
+        
+        if category:
+            filters &= Q(category=category)
+        if region:
+            filters &= Q(location__region__iexact=region)
+        if district:
+            filters &= Q(location__district__iexact=district)
+        if min_price:
+            filters &= Q(price_unit__gte=min_price)
+        if max_price:
+            filters &= Q(price_unit__lte=max_price)
+            
+        houses = House.objects.filter(filters).select_related('location').order_by('-house_id')
+        
+        paginator = PageNumberPagination()
+        
+        page = paginator.paginate_queryset(houses, request)
+        if page is not None:
+            serializer = ResponseHouseSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = ResponseHouseSerializer(houses, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
