@@ -13,11 +13,11 @@ class Tenant(User):
     @classmethod
     def save_tenant(cls, first_name: str, middle_name: str, last_name: str, phone_number: str, gender: str, username: str, email: str, password: str, avatar=None) -> None:
 
-        if cls.check_if_email_exists(email=email):
+        if cls.is_email_exist(email=email):
             raise ValidationError(f"Tenant with the email '{email}' already exists.")
-        if cls.check_if_username_exists(username=username):
+        if cls.is_username_exist(username=username):
             raise ValidationError(f"Tenant with the username '{username}' already exists.")
-        if cls.check_if_phone_number_exists(phone_number=phone_number):
+        if cls.is_phone_number_exist(phone_number=phone_number):
             raise ValidationError(f"Tenant with phone number '{phone_number}' already exists.")
         
         try:  

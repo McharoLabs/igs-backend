@@ -1,3 +1,2 @@
-from django.shortcuts import render
-
-# Create your views here.
+from .view.district_view import *
+from .view.region_view import *

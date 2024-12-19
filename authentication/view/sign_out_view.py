@@ -12,11 +12,11 @@ class SignOutAPIView(generics.GenericAPIView):
 
     @swagger_auto_schema(
         operation_description="This logs out the user and blacklist the token",
-        operation_summary="Log out user",
+        operation_summary="Log out",
         tags=["Authentication"],
         request_body=SignOutSerializer,
         responses={
-            201: DetailResponseSerializer(many=False),
+            200: DetailResponseSerializer(many=False),
             400: "Invalid input data"
         },
     )

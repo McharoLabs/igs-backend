@@ -33,8 +33,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Meta:
         db_table = 'user'
         
-    @staticmethod
-    def check_if_username_exists(username: str) -> bool:
+    @classmethod
+    def is_username_exist(cls,username: str) -> bool:
         """Method to check if the user with given username exists in the database
 
         Args:
@@ -43,10 +43,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         Returns:
             bool: Return true if the user exists in the database, otherwise false
         """
-        return User.objects.filter(username=username).first()
+        return cls.objects.filter(username=username).exists()
     
-    @staticmethod
-    def check_if_email_exists(email: str) -> bool:
+    @classmethod
+    def is_email_exist(cls, email: str) -> bool:
         """Method to check if te user exists in the database with given email
 
         Args:
@@ -55,10 +55,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         Returns:
             bool: Returns true if the user exists in the database, otherwise false
         """
-        return User.objects.filter(email=email).first()
+        return cls.objects.filter(email=email).exists()
     
-    @staticmethod
-    def check_if_phone_number_exists(phone_number: str) -> bool:
+    @classmethod
+    def is_phone_number_exist(cls,phone_number: str) -> bool:
         """Method to check if the phone number of the user already exists in the database
 
         Args:
@@ -67,4 +67,16 @@ class User(AbstractBaseUser, PermissionsMixin):
         Returns:
             bool: Returns true if the user phone number already exists in the database, otherwise false
         """
-        return User.objects.filter(phone_number=phone_number).first()
+        return cls.objects.filter(phone_number=phone_number).exists()
+    
+    @classmethod
+    def get_by_username(cls, username: str) -> 'User':
+        """This method get user by username from the dtabase
+
+        Args:
+            username (str): Username of the user to find the user from the database
+
+        Returns:
+            User: User instance
+        """
+        return cls.objects.filter(username=username).first()

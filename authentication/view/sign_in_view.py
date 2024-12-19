@@ -21,7 +21,7 @@ class SignInAPIView(generics.GenericAPIView):
         tags=["Authentication"],
         request_body=SignInSerializer,
         responses={
-            201: AuthResponse(many=False),
+            200: AuthResponse(many=False),
             400: "Invalid input data"
         },
     )

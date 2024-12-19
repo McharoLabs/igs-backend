@@ -11,13 +11,25 @@ class Agent(User):
         db_table = 'agent'
         
     @classmethod
+    def get_agent_by_username(cls, username: str) -> 'Agent':
+        """This method gets agent by username
+
+        Args:
+            username (str): username to find with
+
+        Returns:
+            Agent: Agent instance if found, otherwise None
+        """
+        return cls.objects.filter(username=username).first()
+        
+    @classmethod
     def save_agent(cls, first_name: str, middle_name: str, last_name: str, phone_number: str, gender: str, username: str, email: str, password: str, avatar=None) -> None:
 
-        if cls.check_if_email_exists(email=email):
+        if cls.is_email_exist(email=email):
             raise ValidationError(f"An agent with the email '{email}' already exists.")
-        if cls.check_if_username_exists(username=username):
+        if cls.is_username_exist(username=username):
             raise ValidationError(f"An agent with the username '{username}' already exists.")
-        if cls.check_if_phone_number_exists(phone_number=phone_number):
+        if cls.is_phone_number_exist(phone_number=phone_number):
             raise ValidationError(f"An agent with phone number '{phone_number}' already exists.")
         
         try:  
