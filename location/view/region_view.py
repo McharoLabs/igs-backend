@@ -31,6 +31,9 @@ class RegionViewSet(viewsets.ViewSet):
         
         return [permission() for permission in permission_classes]
 
+    def get_queryset(self):
+        return Region.objects.none()
+
     @swagger_auto_schema(
         operation_description="Add a new region by providing a new region name",
         operation_summary="Create New Region",

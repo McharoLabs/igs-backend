@@ -1,13 +1,20 @@
 from decimal import Decimal, InvalidOperation
 import uuid
 from django.db import models
+from django.apps import apps
 
 from house.enums.category import CATEGORY
-from location.model.location import Location
-from user.model.agent import Agent
-from user.model.landlord import LandLord
+from house.enums.furnishing_status import FURNISHING_STATUS
+from house.enums.heating_cooling_system import HEATING_COOLING_SYSTEM
+from house.enums.security_feature import SECURITY_FEATURES
+from house.enums.room_category import ROOM_CATEGORY
+from location.models import Location
+from user.models import Agent
+from user.models import LandLord
 import logging
 from django.db.models.query import QuerySet
+from django.db.models import Q
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -16,26 +23,89 @@ class House(models.Model):
     agent = models.ForeignKey(Agent, on_delete=models.SET_NULL, null=True, related_name="houses")
     landlord = models.ForeignKey(LandLord, on_delete=models.SET_NULL, null=True, related_name="houses")
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="houses")
-    category = models.CharField(max_length=20, choices=[(c.value, c.name) for c in CATEGORY], default=CATEGORY.SALE.value, null=False, blank=False)
+    category = models.CharField(max_length=100, choices=CATEGORY.choices(), default=CATEGORY.default(), null=False, blank=False)
+    price = models.DecimalField(max_digits=32, decimal_places=2, help_text="The price for the whoole house")
     title = models.CharField(max_length=255)
     description = models.TextField()
-    price_unit = models.CharField(max_length=50)
     condition = models.CharField(max_length=100)
     nearby_facilities = models.TextField()
     utilities = models.TextField()
-    security_features = models.TextField()
-    heating_cooling_system = models.CharField(max_length=255)
-    furnishing_status = models.CharField(max_length=255)
+    security_features = models.CharField(max_length=255, choices=SECURITY_FEATURES.choices(), default=SECURITY_FEATURES.default(), null=False, blank=False)
+    heating_cooling_system = models.CharField(max_length=255, choices=HEATING_COOLING_SYSTEM.choices(), default=HEATING_COOLING_SYSTEM.default(), null=False, blank=False)
+    furnishing_status = models.CharField(max_length=255, choices=FURNISHING_STATUS.choices(), default=FURNISHING_STATUS.default(), null=False, blank=False)
     total_bed_room = models.IntegerField()
     total_dining_room = models.IntegerField()
     total_bath_room = models.IntegerField()
-    total_floor = models.IntegerField()
+    is_available = models.BooleanField(default=True)
+    listing_date = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'house'
         
     def __str__(self) -> str:
         return self.title
+    
+    @classmethod
+    def filter_houses(
+        cls, 
+        category: str = None, 
+        region: str = None, 
+        district: str = None, 
+        min_price: Decimal = None, 
+        max_price: Decimal = None, 
+        room_category: str = None, 
+        for_whole_house: bool = False
+    ) -> 'QuerySet[House]':
+        
+        if category not in CATEGORY.choices():
+            raise ValueError(f"Invalid category '{category}'. Valid options are {CATEGORY.choices()}.")
+        
+        if room_category not in ROOM_CATEGORY.choices():
+            raise ValueError(f"Invalid room category '{room_category}'. Value options are {ROOM_CATEGORY.choices()}")
+        
+        filters = Q()
+
+        if category:
+            filters &= Q(category=category)
+        
+        if region:
+            filters &= Q(location__region__iexact=region)
+        if district:
+            filters &= Q(location__district__iexact=district)
+        
+        if min_price:
+            filters &= Q(price__gte=min_price)
+        if max_price:
+            filters &= Q(price__lte=max_price)
+            
+        if category == CATEGORY.SALE.value:
+            if min_price:
+                filters &= Q(price__gte=min_price)
+            if max_price:
+                filters &= Q(price__lte=max_price)
+        else:
+            if for_whole_house:
+                if min_price:
+                    filters &= Q(price__gte=min_price)
+                if max_price:
+                    filters &= Q(price__lte=max_price)
+                
+            else:
+                room_filters = Q()
+                if room_category:
+                    room_filters &= Q(room_category=room_category)
+                if min_price:
+                    room_filters &= Q(price__gte=min_price)
+                if max_price:
+                    room_filters &= Q(price__lte=max_price)
+                    
+                Room = apps.get_model("house", "Room")
+                rooms = Room.objects.filter(room_filters)
+
+                filters &= Q(house_id__in=rooms.values('house_id'))
+        
+        return cls.objects.filter(filters).select_related('location').distinct('house_id').order_by('-listing_date')
     
     @classmethod
     def get_house_by_id(cls, house_id: uuid.UUID) -> 'House':
@@ -64,7 +134,7 @@ class House(models.Model):
         location: Location,
         title: str,
         description: str,
-        price_unit: Decimal,
+        price: Decimal,
         condition: str,
         nearby_facilities: str,
         category: str,
@@ -75,62 +145,62 @@ class House(models.Model):
         total_bed_room: int,
         total_dining_room: int,
         total_bath_room: int,
-        total_floor: int,
         agent: Agent = None,
         landlord: LandLord = None
     ) -> str:
         """
-        This method creates a new House and saves it to the database.
+        Create and save a new House instance to the database.
 
         Args:
-            agent (Agent): Agent instance.
-            landlord (LandLord): Landlord instance.
-            location (Location): Location Instance.
-            title (str): Title of the house.
-            description (str): Description of the house.
-            price_unit (str): Price unit for the house.
-            condition (str): Condition of the house.
-            nearby_facilities (str): Nearby facilities of the house.
-            category (str): Category of the house.
-            utilities (str): Utilities available at the house.
-            security_features (str): Security features of the house.
-            heating_cooling_system (str): Heating/cooling system in the house.
-            furnishing_status (str): Furnishing status of the house.
-            total_bed_room (int): Total number of bedrooms.
-            total_dining_room (int): Total number of dining rooms.
-            total_bath_room (int): Total number of bathrooms.
-            total_floor (int): Total number of floors.
+            location (Location): The house's geographical location.
+            title (str): The title or name of the house.
+            description (str): A detailed description of the house.
+            price (Decimal): The price of the house.
+            condition (str): The current condition of the house.
+            nearby_facilities (str): Facilities close to the house.
+            category (str): The category of the house (e.g., residential, commercial).
+            utilities (str): Available utilities in the house.
+            security_features (str): Security features provided in the house.
+            heating_cooling_system (str): Heating or cooling system type.
+            furnishing_status (str): Furnishing condition of the house.
+            total_bed_room (int): Number of bedrooms.
+            total_dining_room (int): Number of dining rooms.
+            total_bath_room (int): Number of bathrooms.
+            agent (Agent, optional): The agent managing the house. Default is None.
+            landlord (LandLord, optional): The landlord of the house. Default is None.
 
         Returns:
-            str: Message indicating whether the house was successfully added.
+            str: A message indicating successful creation of the house.
+
+        Raises:
+            ValueError: If the category is invalid or the price is not a valid decimal.
         """
         
-        if category not in [c.value for c in CATEGORY]:
-            raise ValueError(f"Invalid category '{category}'. Valid options are {[c.value for c in CATEGORY]}.")
-        
+        if category not in CATEGORY.choices():
+            raise ValueError(f"Invalid category '{category}'. Valid options are {CATEGORY.choices()}.")
+
         try:
-            price_unit_decimal = Decimal(price_unit)
+            price_value = Decimal(price)
         except InvalidOperation:
-            raise ValueError(f"Invalid price unit '{price_unit}'. It must be a valid decimal number.")
-        
+            raise ValueError(f"Invalid price '{price}'. It must be a valid decimal number.")
+
         house = cls(
             agent=agent,
             landlord=landlord,
             location=location,
+            category=category,
             title=title,
             description=description,
-            price_unit=price_unit_decimal,
+            price=price_value,
             condition=condition,
             nearby_facilities=nearby_facilities,
-            category=category,
             utilities=utilities,
             security_features=security_features,
             heating_cooling_system=heating_cooling_system,
             furnishing_status=furnishing_status,
             total_bed_room=total_bed_room,
             total_dining_room=total_dining_room,
-            total_bath_room=total_bath_room,
-            total_floor=total_floor
+            total_bath_room=total_bath_room
         )
 
         house.save()

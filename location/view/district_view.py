@@ -29,6 +29,9 @@ class DistrictViewSet(viewsets.ModelViewSet):
             permission_classes = [permissions.AllowAny]
         
         return [permission() for permission in permission_classes]
+    
+    def get_queryset(self):
+        return District.objects.none()
 
     @swagger_auto_schema(
         operation_description="Add a new district by providing the district name and existing region id",

@@ -25,7 +25,7 @@ class MyUserManager(BaseUserManager):
             phone_number=phone_number,
             username=username,
             email=email,
-            verified=True,
+            is_verified=True,
             **extra_fields
         )
         user.set_password(password)

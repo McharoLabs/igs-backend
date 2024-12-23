@@ -2,10 +2,10 @@ from enum import Enum
 from typing import List, Tuple
 
 
-class TRANSACTION_TYPE(Enum):
-    RENT = 'Rent'
-    SALE = 'Sale'
-    BOOKING = 'Booking'
+class ROOM_STATUS(Enum):
+    AVAILABLE = 'Available'
+    BOOKED = 'Booked'
+    RENTED = 'Rented'
     
     @classmethod
     def choices(cls) -> List[Tuple[str, str]]:
@@ -13,4 +13,4 @@ class TRANSACTION_TYPE(Enum):
     
     @classmethod
     def default(cls) -> str:
-        return cls.BOOKING.value
+        return cls.AVAILABLE.value
