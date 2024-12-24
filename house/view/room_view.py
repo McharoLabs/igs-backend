@@ -1,0 +1,142 @@
+from decimal import Decimal
+from rest_framework import viewsets, permissions, status
+from authentication.custom_permissions import *
+from rest_framework.response import Response
+from rest_framework.decorators import action
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+from house.enums.room_category import ROOM_CATEGORY
+from house.models import Room, House
+from house.serializers import RequestRoomSerializer, ResponseRoomSerializer
+from shared.seriaizers import DetailResponseSerializer
+import logging
+from rest_framework.pagination import PageNumberPagination
+from django.db import transaction
+
+
+logger = logging.getLogger(__name__)
+
+class RoomViewSet(viewsets.ModelViewSet):
+    def get_serializer_class(self):
+        return RequestRoomSerializer
+
+    def get_permissions(self):
+        """
+        Custom method to define permissions for each action.
+        """
+        if self.action == 'add_room':
+            permission_classes = [permissions.IsAuthenticated, IsAgentOrLandLord]
+        else:
+            permission_classes = [permissions.AllowAny]
+        
+        return [permission() for permission in permission_classes]
+    
+    def get_queryset(self):
+        return Room.objects.none()
+    
+    @swagger_auto_schema(
+        operation_description="Add a new room for specific house by providing the necessary details such as house id, room number, price, etc.",
+        operation_summary="Create New Room",
+        method="post",
+        tags=["Room"],
+        request_body=RequestRoomSerializer,
+        responses={200: DetailResponseSerializer(many=False), 400: "Invalid input data"},
+    )
+    @action(detail=False, methods=['post'])
+    @transaction.atomic(savepoint=False)
+    def add_room(self, request):
+        """Custom action to add a new room."""
+        request_serializer = RequestRoomSerializer(data=request.data)
+        request_serializer.is_valid(raise_exception=True)
+        validated_data = request_serializer.validated_data
+
+        landlord = LandLord.get_landlord_by_username(username=request.user)
+        agent = Agent.get_agent_by_username(username=request.user)
+
+        if landlord is None and agent is None:
+            return Response(data={"detail": "You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        try:                
+            house = House.get_house_by_agent_or_landlord(agent=agent, landlord=landlord, house_id=validated_data.get("house_id"))
+            
+            if house is None:
+                return Response(data={"detail": "No house found corresponding."}, status=status.HTTP_404_NOT_FOUND)
+
+            response_message = Room.add_room(
+                house=house, 
+                room_category=validated_data.get("room_category"), 
+                room_number=validated_data.get("room_number"), 
+                price=validated_data.get("price")
+            )
+
+            response_serializer = DetailResponseSerializer({"detail": response_message})
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+        except ValueError as e:
+            logger.error(f"Validation error occurred: {e}", exc_info=True)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Unexpected error occurred: {e}", exc_info=True)
+            return Response({"detail": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    
+    @swagger_auto_schema(
+        operation_description="List filtered rooms",
+        operation_summary="Filtered Rooms",
+        method="get",
+        tags=["Rooms"],
+        responses={200: ResponseRoomSerializer(many=True)},
+        manual_parameters=[
+            openapi.Parameter(
+                'region', openapi.IN_QUERY, description="Region of the house location", type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'district', openapi.IN_QUERY, description="District of the house location", type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'minPrice', openapi.IN_QUERY, description="Minimum price of the room", type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'maxPrice', openapi.IN_QUERY, description="Maximum price of the room", type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'roomCategory', openapi.IN_QUERY, 
+                description="Category of the room (e.g., Self-contained, Shared, etc.)", 
+                type=openapi.TYPE_STRING,
+                enum=[category.value for category in ROOM_CATEGORY] 
+            ),
+        ]
+    )
+    @action(detail=False, methods=['get'])
+    def filter_rooms(self, request):
+        
+        region: str = request.query_params.get('region')
+        district: str = request.query_params.get('district')
+        min_price: str = request.query_params.get('minPrice')
+        max_price: str = request.query_params.get('maxPrice')
+        room_category: str = request.query_params.get('roomCategory')
+        
+        try:
+            min_price = Decimal(min_price) if min_price else None
+            max_price = Decimal(max_price) if max_price else None
+        except Exception as e:
+            return Response({"detail": "Invalid price format."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            rooms = Room.filter_rooms(region=region, district=district, min_price=min_price, max_price=max_price, room_category=room_category)
+            
+            paginator = PageNumberPagination()
+            
+            page = paginator.paginate_queryset(rooms, request)
+            if page is not None:
+                serializer = ResponseRoomSerializer(page, many=True)
+                return paginator.get_paginated_response(serializer.data)
+
+            serializer = ResponseRoomSerializer(rooms, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except ValueError as e:
+            logger.error(f"Validation error occurred: {e}", exc_info=True)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Unexpected error occurred: {e}", exc_info=True)
+            return Response({"detail": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

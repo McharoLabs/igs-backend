@@ -1,17 +1,19 @@
-from decimal import InvalidOperation
-from typing import cast
+from decimal import Decimal
 from rest_framework import viewsets, permissions, status
 from authentication.custom_permissions import *
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+from house.enums.category import CATEGORY
 from house.models import House
-from house.serializers import *
+from house.serializers import RequestHouseSerializer, ResponseHouseSerializer
 from location.models import District
 from location.models import Location
 from shared.seriaizers import DetailResponseSerializer
 import logging
 from rest_framework.pagination import PageNumberPagination
+from django.db import transaction
 
 
 logger = logging.getLogger(__name__)
@@ -47,61 +49,60 @@ class HouseViewSet(viewsets.ModelViewSet):
         responses={200: DetailResponseSerializer(many=False), 400: "Invalid input data"},
     )
     @action(detail=False, methods=['post'])
+    @transaction.atomic(savepoint=False)
     def add_house(self, request):
         """Custom action to add a new house."""
         request_serializer = RequestHouseSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
         validated_data = request_serializer.validated_data
-        
+
         district = District.get_district_by_id(district_id=validated_data.get("district_id"))
         if district is None:
-            return Response(data={"District not found"}, status=status.HTTP_404_NOT_FOUND)
-        
+            return Response(data={"detail": "District not found"}, status=status.HTTP_404_NOT_FOUND)
+
         landlord = LandLord.get_landlord_by_username(username=request.user)
         agent = Agent.get_agent_by_username(username=request.user)
-        
+
         if landlord is None and agent is None:
-            return Response(data={"You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)
-        
+            return Response(data={"detail": "You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)
+
         try:
-            location = cast(Location, Location.add_location(
-                region=district.region.name, 
-                district=district.name,
-                ward=validated_data.get("ward"),
-                latitude=validated_data.get("latitude"), 
-                longitude=validated_data.get("longitude")
-            ))
-            
-            data = {
-                "location": location,
-                "title": validated_data.get("title"),
-                "description": validated_data.get("description"),
-                "price": validated_data.get("price"),
-                "condition": validated_data.get("condition"),
-                "nearby_facilities": validated_data.get("nearby_facilities"),
-                "category": validated_data.get("category"),
-                "utilities": validated_data.get("utilities"),
-                "security_features": validated_data.get("security_features"),
-                "heating_cooling_system": validated_data.get("heating_cooling_system"),
-                "furnishing_status": validated_data.get("furnishing_status"),
-                "total_bed_room": validated_data.get("total_bed_room"),
-                "total_dining_room": validated_data.get("total_dining_room"),
-                "total_bath_room": validated_data.get("total_bath_room"),
-                "agent": agent,
-                "landlord": landlord
-            }
-            
-            response_message = House.add_house(**data)
-            
-            response_serializer = DetailResponseSerializer({"detail": response_message})
-            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+            with transaction.atomic():
+                location = Location.add_location(
+                    region=district.region.name,
+                    district=district.name,
+                    ward=validated_data.get("ward"),
+                    latitude=validated_data.get("latitude"),
+                    longitude=validated_data.get("longitude")
+                )
+
+                data = {
+                    "location": location,
+                    "title": validated_data.get("title"),
+                    "description": validated_data.get("description"),
+                    "price": validated_data.get("price"),
+                    "condition": validated_data.get("condition"),
+                    "nearby_facilities": validated_data.get("nearby_facilities"),
+                    "category": validated_data.get("category"),
+                    "utilities": validated_data.get("utilities"),
+                    "security_features": validated_data.get("security_features"),
+                    "heating_cooling_system": validated_data.get("heating_cooling_system"),
+                    "furnishing_status": validated_data.get("furnishing_status"),
+                    "total_bed_room": validated_data.get("total_bed_room"),
+                    "total_dining_room": validated_data.get("total_dining_room"),
+                    "total_bath_room": validated_data.get("total_bath_room"),
+                    "agent": agent,
+                    "landlord": landlord
+                }
+
+                response_message = House.add_house(**data)
+
+                response_serializer = DetailResponseSerializer({"detail": response_message})
+                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
         except ValueError as e:
             logger.error(f"Validation error occurred: {e}", exc_info=True)
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        
-        except InvalidOperation as e:
-            logger.error(f"Invalid price unit: {e}", exc_info=True)
-            return Response({"detail": "Price unit must be a valid decimal number."}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             logger.error(f"Unexpected error occurred: {e}", exc_info=True)
             return Response({"detail": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -142,26 +143,58 @@ class HouseViewSet(viewsets.ModelViewSet):
         method="get",
         tags=["House"],
         responses={200: ResponseHouseSerializer(many=True)},
+        manual_parameters=[
+            openapi.Parameter(
+                'category', openapi.IN_QUERY, 
+                description="Category of the house (e.g., Rental, Sale)", 
+                type=openapi.TYPE_STRING,
+                enum=[category.value for category in CATEGORY]
+            ),
+            openapi.Parameter(
+                'region', openapi.IN_QUERY, description="Region of the house location", type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'district', openapi.IN_QUERY, description="District of the house location", type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'minPrice', openapi.IN_QUERY, description="Minimum price of the house", type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'maxPrice', openapi.IN_QUERY, description="Maximum price of the house", type=openapi.TYPE_STRING
+            ),
+        ]
     )
     @action(detail=False, methods=['get'])
     def filter_houses(self, request):
         
-        category = request.query_params.get('category')
-        region = request.query_params.get('region')
-        district = request.query_params.get('district')
-        min_price = request.query_params.get('minPrice')
-        max_price = request.query_params.get('maxPrice')
-        room_category = request.query_params.get('roomCategory')
-        for_whole_house = request.query_params.get('forWholeHouse')
-            
-        houses = House.filter_houses(category=category, region=region, district=district, min_price=min_price, max_price=max_price, room_category=room_category, for_whole_house=for_whole_house)
+        category: str = request.query_params.get('category')
+        region: str = request.query_params.get('region')
+        district: str = request.query_params.get('district')
+        min_price: str = request.query_params.get('minPrice')
+        max_price: str = request.query_params.get('maxPrice')
         
-        paginator = PageNumberPagination()
-        
-        page = paginator.paginate_queryset(houses, request)
-        if page is not None:
-            serializer = ResponseHouseSerializer(page, many=True)
-            return paginator.get_paginated_response(serializer.data)
+        try:
+            min_price = Decimal(min_price) if min_price else None
+            max_price = Decimal(max_price) if max_price else None
+        except Exception as e:
+            return Response({"detail": "Invalid price format."}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = ResponseHouseSerializer(houses, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        try:
+            houses = House.filter_houses(category=category, region=region, district=district, min_price=min_price, max_price=max_price)
+            
+            
+            paginator = PageNumberPagination()
+            
+            page = paginator.paginate_queryset(houses, request)
+            if page is not None:
+                serializer = ResponseHouseSerializer(page, many=True)
+                return paginator.get_paginated_response(serializer.data)
+
+            serializer = ResponseHouseSerializer(houses, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except ValueError as e:
+            logger.error(f"Validation error occurred: {e}", exc_info=True)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Unexpected error occurred: {e}", exc_info=True)
+            return Response({"detail": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

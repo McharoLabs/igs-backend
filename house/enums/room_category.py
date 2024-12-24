@@ -19,3 +19,9 @@ class ROOM_CATEGORY(Enum):
     @classmethod
     def default(cls) -> str:
         return cls.SELF_CONTAINED.value
+    
+    @classmethod
+    def valid(cls, room_category:str) -> bool:
+        if room_category not in [choice[0] for choice in cls.choices()]:
+            return False
+        return True

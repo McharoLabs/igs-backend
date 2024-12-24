@@ -4,6 +4,7 @@ from django.db import models
 from django.apps import apps
 
 from house.enums.category import CATEGORY
+from house.enums.condition import CONDITION
 from house.enums.furnishing_status import FURNISHING_STATUS
 from house.enums.heating_cooling_system import HEATING_COOLING_SYSTEM
 from house.enums.security_feature import SECURITY_FEATURES
@@ -24,10 +25,10 @@ class House(models.Model):
     landlord = models.ForeignKey(LandLord, on_delete=models.SET_NULL, null=True, related_name="houses")
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="houses")
     category = models.CharField(max_length=100, choices=CATEGORY.choices(), default=CATEGORY.default(), null=False, blank=False)
-    price = models.DecimalField(max_digits=32, decimal_places=2, help_text="The price for the whoole house")
+    price = models.DecimalField(max_digits=32, decimal_places=2, help_text="The price for the wholee house")
     title = models.CharField(max_length=255)
     description = models.TextField()
-    condition = models.CharField(max_length=100)
+    condition = models.CharField(max_length=100, choices=CONDITION.choices(), default=CONDITION.default(), null=False, blank=False)
     nearby_facilities = models.TextField()
     utilities = models.TextField()
     security_features = models.CharField(max_length=255, choices=SECURITY_FEATURES.choices(), default=SECURITY_FEATURES.default(), null=False, blank=False)
@@ -46,6 +47,66 @@ class House(models.Model):
     def __str__(self) -> str:
         return self.title
     
+    def is_owned_by_agent_or_landlord(self, agent=None, landlord=None) -> bool:
+        """Check if the house is owned by the provided agent or landlord.
+
+        Args:
+            agent (Agent, optional): The agent to check ownership against. Defaults to None.
+            landlord (LandLord, optional): The landlord to check ownership against. Defaults to None.
+
+        Returns:
+            bool: True if either the agent or the landlord owns the house, False otherwise.
+        """
+        if agent and self.agent == agent:
+            return True
+        if landlord and self.landlord == landlord:
+            return True
+        return False
+    
+    @classmethod
+    def get_house_by_agent_or_landlord(cls, agent=None, landlord=None, house_id=None) -> 'House':
+        """Get a house by agent or landlord and house ID (UUID).
+        
+        Args:
+            agent (Agent, optional): The agent who owns the house. Defaults to None.
+            landlord (LandLord, optional): The landlord who owns the house. Defaults to None.
+            house_id (UUID, optional): The ID of the house to retrieve. Defaults to None.
+
+        Returns:
+            House: The house instance if found, otherwise None.
+        """
+        if not house_id:
+            return None
+        
+        if agent and landlord:
+            raise ValueError("A house can only be associated with either an agent or a landlord, not both.")
+        
+        filters = Q(house_id=house_id)
+        
+        if agent:
+            filters &= Q(agent=agent)
+        if landlord:
+            filters &= Q(landlord=landlord)
+        
+        return cls.objects.filter(filters).first()
+    
+    @classmethod
+    def get_houses_for_agent_or_landlord(cls, agent=None, landlord=None) -> 'QuerySet[House]':
+        """Retrieve all houses for the given agent or landlord.
+
+        Args:
+            agent (Agent, optional): The agent to get houses for. Defaults to None.
+            landlord (LandLord, optional): The landlord to get houses for. Defaults to None.
+
+        Returns:
+            QuerySet: A queryset of houses associated with the provided agent or landlord.
+        """
+        if agent:
+            return cls.objects.filter(agent=agent)
+        if landlord:
+            return cls.objects.filter(landlord=landlord)
+        return cls.objects.none()
+    
     @classmethod
     def filter_houses(
         cls, 
@@ -54,15 +115,10 @@ class House(models.Model):
         district: str = None, 
         min_price: Decimal = None, 
         max_price: Decimal = None, 
-        room_category: str = None, 
-        for_whole_house: bool = False
     ) -> 'QuerySet[House]':
         
-        if category not in CATEGORY.choices():
-            raise ValueError(f"Invalid category '{category}'. Valid options are {CATEGORY.choices()}.")
-        
-        if room_category not in ROOM_CATEGORY.choices():
-            raise ValueError(f"Invalid room category '{room_category}'. Value options are {ROOM_CATEGORY.choices()}")
+        if category and not CATEGORY.valid(category=category):
+            raise ValueError(f"Invalid category '{category}'. Valid options are {', '.join([choice[0] for choice in CATEGORY.choices()])}.")
         
         filters = Q()
 
@@ -73,39 +129,13 @@ class House(models.Model):
             filters &= Q(location__region__iexact=region)
         if district:
             filters &= Q(location__district__iexact=district)
-        
+            
         if min_price:
             filters &= Q(price__gte=min_price)
         if max_price:
             filters &= Q(price__lte=max_price)
-            
-        if category == CATEGORY.SALE.value:
-            if min_price:
-                filters &= Q(price__gte=min_price)
-            if max_price:
-                filters &= Q(price__lte=max_price)
-        else:
-            if for_whole_house:
-                if min_price:
-                    filters &= Q(price__gte=min_price)
-                if max_price:
-                    filters &= Q(price__lte=max_price)
-                
-            else:
-                room_filters = Q()
-                if room_category:
-                    room_filters &= Q(room_category=room_category)
-                if min_price:
-                    room_filters &= Q(price__gte=min_price)
-                if max_price:
-                    room_filters &= Q(price__lte=max_price)
-                    
-                Room = apps.get_model("house", "Room")
-                rooms = Room.objects.filter(room_filters)
-
-                filters &= Q(house_id__in=rooms.values('house_id'))
         
-        return cls.objects.filter(filters).select_related('location').distinct('house_id').order_by('-listing_date')
+        return cls.objects.filter(filters).select_related('location').order_by('-listing_date')
     
     @classmethod
     def get_house_by_id(cls, house_id: uuid.UUID) -> 'House':
@@ -176,8 +206,8 @@ class House(models.Model):
             ValueError: If the category is invalid or the price is not a valid decimal.
         """
         
-        if category not in CATEGORY.choices():
-            raise ValueError(f"Invalid category '{category}'. Valid options are {CATEGORY.choices()}.")
+        if not CATEGORY.valid(category=category):
+            raise ValueError(f"Invalid category '{category}'. Valid options are {', '.join([choice[0] for choice in CATEGORY.choices()])}.")
 
         try:
             price_value = Decimal(price)
