@@ -1,4 +1,7 @@
 from decimal import Decimal
+from typing import cast
+import uuid
+from django.http import HttpRequest
 from rest_framework import viewsets, permissions, status
 from authentication.custom_permissions import *
 from rest_framework.response import Response
@@ -7,13 +10,16 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from house.enums.category import CATEGORY
 from house.models import House
-from house.serializers import RequestHouseSerializer, ResponseHouseSerializer
+from house.serializers import RequestHouseSerializer, ResponseHouseSerializer, ResponseHouseDetailSerializer
 from location.models import District
 from location.models import Location
 from shared.seriaizers import DetailResponseSerializer
 import logging
 from rest_framework.pagination import PageNumberPagination
 from django.db import transaction
+from django.core.exceptions import PermissionDenied
+
+from user.models import User
 
 
 logger = logging.getLogger(__name__)
@@ -26,11 +32,9 @@ class HouseViewSet(viewsets.ModelViewSet):
         """
         Custom method to define permissions for each action.
         """
-        if self.action == 'add_house':
+        if self.action == 'add_house' or self.action == 'list_houses':
             permission_classes = [permissions.IsAuthenticated, IsAgentOrLandLord]
         elif self.action == 'retrieve_house':
-            permission_classes = [permissions.IsAuthenticated]
-        elif self.action == 'list_houses':
             permission_classes = [permissions.IsAuthenticated]
         else:
             permission_classes = [permissions.AllowAny]
@@ -112,15 +116,18 @@ class HouseViewSet(viewsets.ModelViewSet):
         operation_summary="Retrieve House",
         method="get",
         tags=["House"],
-        responses={200: ResponseHouseSerializer(many=False), 404: "House not found"},
+        responses={
+            200: ResponseHouseDetailSerializer(many=False), 
+            404: DetailResponseSerializer(many=False)
+        },
     )
     @action(detail=True, methods=['get'])
-    def retrieve_house(self, request, pk=None):
+    def retrieve_house(self, request: HttpRequest, pk: uuid.UUID=None):
         """Retrieve a specific house by ID."""
         house = House.get_house_by_id(house_id=pk)
         if not house:
             return Response({"detail": "House not found"}, status=status.HTTP_404_NOT_FOUND)
-        serializer = ResponseHouseSerializer(house)
+        serializer = ResponseHouseDetailSerializer(house)
         return Response(serializer.data)
 
     @swagger_auto_schema(
@@ -128,14 +135,37 @@ class HouseViewSet(viewsets.ModelViewSet):
         operation_summary="List Houses",
         method="get",
         tags=["House"],
-        responses={200: ResponseHouseSerializer(many=True)},
+        responses={
+            200: ResponseHouseSerializer(many=True), 
+            401: DetailResponseSerializer(many=False)
+        },
+        manual_parameters=[
+            openapi.Parameter(
+                'house_id',
+                openapi.IN_QUERY,
+                description="House id for getting specific house for the agent or landlord",
+                type=openapi.TYPE_STRING,
+            )
+        ]
     )
     @action(detail=False, methods=['get'])
-    def list_houses(self, request):
-        """List all houses."""
-        houses = House.get_all_houses()
-        serializer = ResponseHouseSerializer(houses, many=True)
-        return Response(serializer.data)
+    def list_houses(self, request: HttpRequest):
+        user = cast(User, request.user)
+        house_id = request.GET.get('house_id')
+        print(house_id)
+        try:
+            houses: House = None
+            if hasattr(user, 'landlord'):
+                houses = House.get_all_houses(landlord=user, house_id=house_id)
+            elif hasattr(user, 'agent'):
+                houses = House.get_all_houses(agent=user, house_id=house_id)
+            else:
+                houses = House.get_all_houses()
+                
+            serializer = ResponseHouseSerializer(houses, many=True)
+            return Response(serializer.data)
+        except PermissionDenied as e:
+            return Response(data={"detail": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
     
     @swagger_auto_schema(
         operation_description="List filtered houses",
@@ -165,14 +195,13 @@ class HouseViewSet(viewsets.ModelViewSet):
         ]
     )
     @action(detail=False, methods=['get'])
-    def filter_houses(self, request):
-        
-        category: str = request.query_params.get('category')
-        region: str = request.query_params.get('region')
-        district: str = request.query_params.get('district')
-        min_price: str = request.query_params.get('minPrice')
-        max_price: str = request.query_params.get('maxPrice')
-        
+    def filter_houses(self, request: HttpRequest):
+        category: str = request.GET.get('category')
+        region: str = request.GET.get('region')
+        district: str = request.GET.get('district')
+        min_price: str = request.GET.get('minPrice')
+        max_price: str = request.GET.get('maxPrice')
+
         try:
             min_price = Decimal(min_price) if min_price else None
             max_price = Decimal(max_price) if max_price else None

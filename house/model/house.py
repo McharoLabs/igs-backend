@@ -8,7 +8,6 @@ from house.enums.condition import CONDITION
 from house.enums.furnishing_status import FURNISHING_STATUS
 from house.enums.heating_cooling_system import HEATING_COOLING_SYSTEM
 from house.enums.security_feature import SECURITY_FEATURES
-from house.enums.room_category import ROOM_CATEGORY
 from location.models import Location
 from user.models import Agent
 from user.models import LandLord
@@ -16,6 +15,7 @@ import logging
 from django.db.models.query import QuerySet
 from django.db.models import Q
 from django.utils import timezone
+from django.core.exceptions import PermissionDenied
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +62,33 @@ class House(models.Model):
         if landlord and self.landlord == landlord:
             return True
         return False
+    
+    def update_house_availability(self) -> None:
+        """Update the availability status of this house.
+
+        This method toggles the availability status of the house. If the house is currently 
+        available, it will be marked as unavailable, and vice versa.
+
+        Returns:
+            bool: True if the availability was successfully updated, False otherwise (e.g., house not found).
+        """
+        self.is_available = not self.is_available
+        self.save()
+        return True
+
+    @staticmethod
+    def is_house_exists(house_id: uuid.UUID) -> bool:
+        """Check if a house with the given ID exists in the database.
+
+        This method checks if a house with the provided house_id exists in the database.
+
+        Args:
+            house_id (uuid.UUID): The unique identifier of the house to check.
+
+        Returns:
+            bool: True if the house exists, False otherwise.
+        """
+        return House.objects.filter(house_id=house_id).exists()
     
     @classmethod
     def get_house_by_agent_or_landlord(cls, agent=None, landlord=None, house_id=None) -> 'House':
@@ -121,6 +148,7 @@ class House(models.Model):
             raise ValueError(f"Invalid category '{category}'. Valid options are {', '.join([choice[0] for choice in CATEGORY.choices()])}.")
         
         filters = Q()
+        filters &= Q(is_available=True)
 
         if category:
             filters &= Q(category=category)
@@ -147,17 +175,32 @@ class House(models.Model):
         Returns:
             House: House instance from the database if found, otehrwise None
         """
-        return cls.objects.filter(house_id=house_id).first()
+        return cls.objects.filter(house_id=house_id, is_available=True).first()
     
-    @staticmethod
-    def get_all_houses() -> 'QuerySet[House]':
-        """This Method gets all the houses from the database
+    @classmethod
+    def get_all_houses(cls, agent: Agent = None, landlord: LandLord = None, house_id: uuid.UUID = None) -> 'QuerySet[House]':
+        """
+        This method gets all the houses, optionally filtered by agent or landlord.
 
         Returns:
-            QuerySet[House]: A list of house instance
+            QuerySet[House]: A list of house instances
+
+        Raises:
+            PermissionDenied: If neither agent nor landlord is provided.
         """
-        return House.objects.filter()
-    
+        filters = Q()
+        
+        if house_id:
+            filters &= Q(house_id=house_id)
+        if agent:
+            filters &= Q(agent=agent)
+            return cls.objects.filter(filters)
+        elif landlord:
+            filters &= Q(landlord=landlord)
+            return cls.objects.filter(filters)
+        else:
+            raise PermissionDenied("You are not authorized to access the houses without specifying an agent or landlord.")
+
     @classmethod
     def add_house(
         cls,

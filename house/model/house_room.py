@@ -20,10 +20,28 @@ class Room(models.Model):
     room_number = models.CharField(max_length=255, null=False, blank=False)
     price = models.DecimalField(max_digits=32, decimal_places=2, help_text="The price for the room")
     status = models.CharField(max_length=255, choices=ROOM_STATUS.choices(), default=ROOM_STATUS.default(), null=False, blank=False)
-    is_available = models.BooleanField(default=True)
 
     class Meta:
         db_table = 'room'
+        
+    def update_room_status_to_booked(self) -> None:
+        """Update the status of the room to 'booked'."""
+        self.status = ROOM_STATUS.BOOKED.value
+        self.save()
+        
+    @classmethod
+    def get_room_by_house_and_room_number(cls, house: House, room_id: uuid.UUID) -> 'Room':
+        """
+        Retrieve a room by its associated house and room number.
+
+        Args:
+            house (House): The house to which the room belongs.
+            room_id (uuid.UUID): The specific room id to find.
+
+        Returns:
+            Room: The room object if found, or None if no matching room exists.
+        """
+        return cls.objects.filter(house=house, room_id=room_id, status=ROOM_STATUS.AVAILABLE.value).first()
 
     @classmethod
     def has_rooms_for_house(cls, house: House) -> bool:
@@ -120,6 +138,7 @@ class Room(models.Model):
             raise ValueError(f"Invalid room category '{room_category}'. Value options are {', '.join(choice[0] for choice in ROOM_CATEGORY.choices())}")
 
         filters = Q()
+        filters &= Q(status=ROOM_STATUS.AVAILABLE.value)
 
         if room_category:
             filters &= Q(room_category=room_category)

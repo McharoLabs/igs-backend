@@ -1,4 +1,5 @@
 from decimal import Decimal
+from django.http import HttpRequest
 from rest_framework import viewsets, permissions, status
 from authentication.custom_permissions import *
 from rest_framework.response import Response
@@ -7,7 +8,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from house.enums.room_category import ROOM_CATEGORY
 from house.models import Room, House
-from house.serializers import RequestRoomSerializer, ResponseRoomSerializer
+from house.serializers import RequestRoomSerializer, ResponseRoomDetailSerializer
 from shared.seriaizers import DetailResponseSerializer
 import logging
 from rest_framework.pagination import PageNumberPagination
@@ -85,7 +86,7 @@ class RoomViewSet(viewsets.ModelViewSet):
         operation_summary="Filtered Rooms",
         method="get",
         tags=["Rooms"],
-        responses={200: ResponseRoomSerializer(many=True)},
+        responses={200: ResponseRoomDetailSerializer(many=True)},
         manual_parameters=[
             openapi.Parameter(
                 'region', openapi.IN_QUERY, description="Region of the house location", type=openapi.TYPE_STRING
@@ -108,13 +109,13 @@ class RoomViewSet(viewsets.ModelViewSet):
         ]
     )
     @action(detail=False, methods=['get'])
-    def filter_rooms(self, request):
+    def filter_rooms(self, request: HttpRequest):
         
-        region: str = request.query_params.get('region')
-        district: str = request.query_params.get('district')
-        min_price: str = request.query_params.get('minPrice')
-        max_price: str = request.query_params.get('maxPrice')
-        room_category: str = request.query_params.get('roomCategory')
+        region: str = request.GET.get('region')
+        district: str = request.GET.get('district')
+        min_price: str = request.GET.get('minPrice')
+        max_price: str = request.GET.get('maxPrice')
+        room_category: str = request.GET.get('roomCategory')
         
         try:
             min_price = Decimal(min_price) if min_price else None
@@ -129,10 +130,10 @@ class RoomViewSet(viewsets.ModelViewSet):
             
             page = paginator.paginate_queryset(rooms, request)
             if page is not None:
-                serializer = ResponseRoomSerializer(page, many=True)
+                serializer = ResponseRoomDetailSerializer(page, many=True)
                 return paginator.get_paginated_response(serializer.data)
 
-            serializer = ResponseRoomSerializer(rooms, many=True)
+            serializer = ResponseRoomDetailSerializer(rooms, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except ValueError as e:
             logger.error(f"Validation error occurred: {e}", exc_info=True)
