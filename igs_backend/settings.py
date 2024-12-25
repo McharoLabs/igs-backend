@@ -29,6 +29,9 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('SECRET_KEY')
+SITE_URL = env('SITE_URL')
+PROPERTY_IMAGE_BASE_URL = env('PROPERTY_IMAGE_BASE_URL')
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True

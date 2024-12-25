@@ -3,6 +3,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 
 from user.enums.gender import GENDER
+from utils.upload_image import upload_profile_to, validate_image
 from .base_user_manager import MyUserManager
 
 
@@ -18,7 +19,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(verbose_name='username', unique=True, max_length=50)
     email = models.EmailField(max_length=100, unique=True, null=False, blank=False)
     password = models.CharField(max_length=255)
-    avatar = models.ImageField(upload_to='avatars', null=False, blank=True, default='avatars/avatar1.png')
+    avatar = models.ImageField(upload_to=upload_profile_to, validators=[validate_image], null=False, blank=True)
     is_verified = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)

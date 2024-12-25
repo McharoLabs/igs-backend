@@ -20,7 +20,7 @@ class LandLordRegistrationView(generics.GenericAPIView):
     @swagger_auto_schema(
         operation_description="Register a new land lord in the system.",
         operation_summary="Land lord Registration",
-        tags=["Land lord Registration"],
+        tags=["Registration"],
         request_body=RequestLandLordRegistrationSerializer,
         responses={
             201: ResponseLandLordRegistrationSerializer(many=False),

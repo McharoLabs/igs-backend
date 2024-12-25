@@ -10,7 +10,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from house.enums.category import CATEGORY
 from house.models import House
-from house.serializers import RequestHouseSerializer, ResponseHouseSerializer, ResponseHouseDetailSerializer
+from house.serializers import RequestHouseSerializer, ResponseHouseSerializer, ResponseHouseDetailSerializer, ResponseBookedHouseSerializer
 from location.models import District
 from location.models import Location
 from shared.seriaizers import DetailResponseSerializer
@@ -32,7 +32,7 @@ class HouseViewSet(viewsets.ModelViewSet):
         """
         Custom method to define permissions for each action.
         """
-        if self.action == 'add_house' or self.action == 'list_houses':
+        if self.action == 'add_house' or self.action == 'list_houses' or self.action == 'booked_houses':
             permission_classes = [permissions.IsAuthenticated, IsAgentOrLandLord]
         elif self.action == 'retrieve_house':
             permission_classes = [permissions.IsAuthenticated]
@@ -43,6 +43,33 @@ class HouseViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         return House.objects.none()
+    
+    @swagger_auto_schema(
+        operation_description="Retrieve booked houses for the authenticated agent or landlord.",
+        operation_summary="Retrieve Booked Houses",
+        method="get",
+        tags=["House"],
+        responses={200: ResponseBookedHouseSerializer(many=True), 400: "Invalid input data"},
+    )
+    @action(detail=False, methods=['get'])
+    def booked_houses(self, request):
+        """Custom action to retrieve booked houses for an agent or landlord."""
+        landlord = LandLord.get_landlord_by_username(username=request.user)
+        agent = Agent.get_agent_by_username(username=request.user)
+
+        if landlord is None and agent is None:
+            return Response(data={"detail": "You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+          houses = House.get_booked_house(agent=agent, landlord=landlord)
+          response_serializer = ResponseBookedHouseSerializer(houses, many=True)
+          return Response(data=response_serializer.data, status=status.HTTP_200_OK)
+        except ValueError as e:
+            logger.error(f"Validation error occurred: {e}", exc_info=True)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Unexpected error occurred: {e}", exc_info=True)
+            return Response({"detail": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @swagger_auto_schema(
         operation_description="Add a new house by providing the necessary details such as agent, landlord, location, price, etc.",
@@ -152,7 +179,6 @@ class HouseViewSet(viewsets.ModelViewSet):
     def list_houses(self, request: HttpRequest):
         user = cast(User, request.user)
         house_id = request.GET.get('house_id')
-        print(house_id)
         try:
             houses: House = None
             if hasattr(user, 'landlord'):

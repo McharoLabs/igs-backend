@@ -82,7 +82,7 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
                     amount=amount
                 )
                 
-                house.update_house_availability()
+                house.update_status_to_booked()
                 response_serializer = DetailResponseSerializer({"detail": response_message})
                 return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -146,7 +146,7 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
                     room=room
                 )
                 
-                room.update_room_status_to_booked()
+                room.update_status_to_booked()
                 
                 response_serializer = DetailResponseSerializer({"detail": response_message})
                 return Response(response_serializer.data, status=status.HTTP_201_CREATED)

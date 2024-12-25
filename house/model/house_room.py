@@ -5,11 +5,15 @@ from django.db import models
 
 from house.enums.category import CATEGORY
 from house.enums.room_category import ROOM_CATEGORY
-from house.enums.room_status import ROOM_STATUS
+from house.enums.availability_status import STATUS
 from django.db.models import QuerySet
 
 from house.model.house import House
 from django.db.models import Q
+
+from user.model.agent import Agent
+from user.model.landlord import LandLord
+from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -19,14 +23,35 @@ class Room(models.Model):
     room_category = models.CharField(max_length=100, choices=ROOM_CATEGORY.choices(), default=ROOM_CATEGORY.default(), null=False, blank=False)
     room_number = models.CharField(max_length=255, null=False, blank=False)
     price = models.DecimalField(max_digits=32, decimal_places=2, help_text="The price for the room")
-    status = models.CharField(max_length=255, choices=ROOM_STATUS.choices(), default=ROOM_STATUS.default(), null=False, blank=False)
+    status = models.CharField(max_length=255, choices=STATUS.choices(), default=STATUS.default(), null=False, blank=False)
 
     class Meta:
         db_table = 'room'
         
-    def update_room_status_to_booked(self) -> None:
+    @classmethod
+    def get_booked_rooms(cls, agent: Agent = None, landlord: LandLord = None) -> 'QuerySet[House]':
+        """Booked room property according to the agent or landlord
+
+        Args:
+            agent (Agent, optional): Agent instance to filter rooms. Defaults to None.
+            landlord (LandLord, optional): Landlord to filter rooms. Defaults to None.
+
+        Raises:
+            ValidationError: You can not path both agent and landlord, only one required
+
+        Returns:
+            QuerySet[House]: A list of room instances if found, otherwise None
+        """
+        if agent and landlord:
+            raise ValidationError("You cannot provide both an agent and a landlord.")
+        if agent:
+            return cls.objects.filter(status=STATUS.BOOKED.value, house__agent=agent)
+        if landlord:
+            return cls.objects.filter(status=STATUS.BOOKED.value, house__landlord=landlord)
+        
+    def update_status_to_booked(self) -> None:
         """Update the status of the room to 'booked'."""
-        self.status = ROOM_STATUS.BOOKED.value
+        self.status = STATUS.BOOKED.value
         self.save()
         
     @classmethod
@@ -41,7 +66,7 @@ class Room(models.Model):
         Returns:
             Room: The room object if found, or None if no matching room exists.
         """
-        return cls.objects.filter(house=house, room_id=room_id, status=ROOM_STATUS.AVAILABLE.value).first()
+        return cls.objects.filter(house=house, room_id=room_id, status=STATUS.AVAILABLE.value).first()
 
     @classmethod
     def has_rooms_for_house(cls, house: House) -> bool:
@@ -138,7 +163,8 @@ class Room(models.Model):
             raise ValueError(f"Invalid room category '{room_category}'. Value options are {', '.join(choice[0] for choice in ROOM_CATEGORY.choices())}")
 
         filters = Q()
-        filters &= Q(status=ROOM_STATUS.AVAILABLE.value)
+        filters &= Q(status=STATUS.AVAILABLE.value)
+        filters &= Q(house__status=STATUS.AVAILABLE.value)
 
         if room_category:
             filters &= Q(room_category=room_category)

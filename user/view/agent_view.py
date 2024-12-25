@@ -20,7 +20,7 @@ class AgentRegistrationView(generics.GenericAPIView):
     @swagger_auto_schema(
         operation_description="Register a new agent in the system.",
         operation_summary="Agent Registration",
-        tags=["Agent Registration"],
+        tags=["Registration"],
         request_body=RequestAgentRegistrationSerializer,
         responses={
             201: ResponseAgentRegistrationSerializer(many=False),

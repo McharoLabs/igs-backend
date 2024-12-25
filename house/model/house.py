@@ -3,6 +3,7 @@ import uuid
 from django.db import models
 from django.apps import apps
 
+from house.enums.availability_status import STATUS
 from house.enums.category import CATEGORY
 from house.enums.condition import CONDITION
 from house.enums.furnishing_status import FURNISHING_STATUS
@@ -16,6 +17,7 @@ from django.db.models.query import QuerySet
 from django.db.models import Q
 from django.utils import timezone
 from django.core.exceptions import PermissionDenied
+from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +39,7 @@ class House(models.Model):
     total_bed_room = models.IntegerField()
     total_dining_room = models.IntegerField()
     total_bath_room = models.IntegerField()
-    is_available = models.BooleanField(default=True)
+    status = models.CharField(max_length=255, choices=STATUS.choices(), default=STATUS.default(), null=False, blank=False)
     listing_date = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -46,6 +48,27 @@ class House(models.Model):
         
     def __str__(self) -> str:
         return self.title
+    
+    @classmethod
+    def get_booked_house(cls, agent: Agent = None, landlord: LandLord = None) -> 'QuerySet[House]':
+        """Booked house property according to the agent or landlord
+
+        Args:
+            agent (Agent, optional): Agent instance to filter houses. Defaults to None.
+            landlord (LandLord, optional): Landlord to filter houses. Defaults to None.
+
+        Raises:
+            ValidationError: You can not path both agent and landlord, only one required
+
+        Returns:
+            QuerySet[House]: A list of house instances if found, otherwise None
+        """
+        if agent and landlord:
+            raise ValidationError("You cannot provide both an agent and a landlord.")
+        if agent:
+            return cls.objects.filter(status=STATUS.BOOKED.value, agent=agent)
+        if landlord:
+            return cls.objects.filter(status=STATUS.BOOKED.value, landlord=landlord)
     
     def is_owned_by_agent_or_landlord(self, agent=None, landlord=None) -> bool:
         """Check if the house is owned by the provided agent or landlord.
@@ -63,18 +86,10 @@ class House(models.Model):
             return True
         return False
     
-    def update_house_availability(self) -> None:
-        """Update the availability status of this house.
-
-        This method toggles the availability status of the house. If the house is currently 
-        available, it will be marked as unavailable, and vice versa.
-
-        Returns:
-            bool: True if the availability was successfully updated, False otherwise (e.g., house not found).
-        """
-        self.is_available = not self.is_available
+    def update_status_to_booked(self) -> None:
+        """Update the status of the house to 'booked'."""
+        self.status = STATUS.BOOKED.value
         self.save()
-        return True
 
     @staticmethod
     def is_house_exists(house_id: uuid.UUID) -> bool:
@@ -148,7 +163,7 @@ class House(models.Model):
             raise ValueError(f"Invalid category '{category}'. Valid options are {', '.join([choice[0] for choice in CATEGORY.choices()])}.")
         
         filters = Q()
-        filters &= Q(is_available=True)
+        filters &= Q(status=STATUS.AVAILABLE.value)
 
         if category:
             filters &= Q(category=category)
@@ -175,7 +190,7 @@ class House(models.Model):
         Returns:
             House: House instance from the database if found, otehrwise None
         """
-        return cls.objects.filter(house_id=house_id, is_available=True).first()
+        return cls.objects.filter(house_id=house_id, status=STATUS.AVAILABLE.value).first()
     
     @classmethod
     def get_all_houses(cls, agent: Agent = None, landlord: LandLord = None, house_id: uuid.UUID = None) -> 'QuerySet[House]':

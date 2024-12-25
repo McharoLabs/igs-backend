@@ -20,7 +20,7 @@ class TenantRegistrationView(generics.GenericAPIView):
     @swagger_auto_schema(
         operation_description="Register a new tenant in the system.",
         operation_summary="Tenant Registration",
-        tags=["Tenant Registration"],
+        tags=["Registration"],
         request_body=RequestTenantRegistrationSerializer,
         responses={
             201: ResponseTenantRegistrationSerializer(many=False),

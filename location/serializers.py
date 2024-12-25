@@ -1,5 +1,1 @@
-from .serializer.request_district_serializer import RequestDistrictSerializer
-from .serializer.request_region_serializer import RequestRegionSerializer
-from .serializer.region_response_serializer import ResponseRegionSerializer
-from .serializer.district_response_serializer import ResponseDistrictSerializer
-from .serializer.response_location_serializer import ResponseLocationSerializer
+from .serializer import *

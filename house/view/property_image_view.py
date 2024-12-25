@@ -1,0 +1,125 @@
+from decimal import Decimal
+import uuid
+from django.conf import settings
+from django.http import HttpRequest, HttpResponse
+from rest_framework import viewsets, permissions, status
+from authentication.custom_permissions import *
+from rest_framework.response import Response
+from rest_framework.decorators import action
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+from house.enums.room_category import ROOM_CATEGORY
+from house.models import  House, PropertyImage
+from house.serializers import RequestPropertyImageSerializer
+from shared.seriaizers import DetailResponseSerializer
+import logging
+from rest_framework.pagination import PageNumberPagination
+from django.db import transaction
+import os
+import mimetypes
+
+
+logger = logging.getLogger(__name__)
+
+class PropertyImageViewSet(viewsets.ModelViewSet):
+    def get_serializer_class(self):
+        return RequestPropertyImageSerializer
+
+    def get_permissions(self):
+        """
+        Custom method to define permissions for each action.
+        """
+        if self.action == 'upload_images':
+            permission_classes = [permissions.IsAuthenticated, IsAgentOrLandLord]
+        else:
+            permission_classes = [permissions.AllowAny]
+        
+        return [permission() for permission in permission_classes]
+    
+    def get_queryset(self):
+        return PropertyImage.objects.none()
+    
+    @swagger_auto_schema(
+        operation_description="Add property images by providing necessary details like house id and an array of images, etc.",
+        operation_summary="Add property images",
+        method="post",
+        tags=["Property Images"],
+        request_body=RequestPropertyImageSerializer,
+        responses={
+            200: DetailResponseSerializer(many=False), 
+            400: "Invalid input data"},
+    )
+    @action(detail=False, methods=['post'])
+    def upload_images(self, request):
+        request_serializer = RequestPropertyImageSerializer(data=request.data)
+        request_serializer.is_valid(raise_exception=True)
+        validated_data = request_serializer.validated_data
+        
+        landlord = LandLord.get_landlord_by_username(username=request.user)
+        agent = Agent.get_agent_by_username(username=request.user)
+
+        if landlord is None and agent is None:
+            return Response(data={"detail": "You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        
+        try:                
+            house = House.get_house_by_agent_or_landlord(agent=agent, landlord=landlord, house_id=validated_data.get("house_id"))
+            
+            if house is None:
+                return Response(data={"detail": "House not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+            PropertyImage.save_images(house=house, images=validated_data.get("images"))
+            
+            return Response(data={"detail": "success"}, status=status.HTTP_200_OK)
+        except ValueError as e:
+            logger.error(f"Validation error occurred: {e}", exc_info=True)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Unexpected error occurred: {e}", exc_info=True)
+            return Response({"detail": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    @swagger_auto_schema(
+        operation_description="View property image",
+        operation_summary="View property image",
+        method="get",
+        tags=["Property Images"],
+        responses={
+            200: "Image response", 
+            400: "Invalid input data",
+            404: "Image not found"
+        },
+        manual_parameters=[
+            openapi.Parameter(
+                'image_id',
+                openapi.IN_PATH,
+                description="The UUID of the image to retrieve",
+                type=openapi.TYPE_STRING,
+                required=True
+            )
+        ]
+    )
+    @action(detail=False, methods=['get'], url_path='property-images/(?P<image_id>[^/]+)')
+    def property_images(self, request, image_id):
+        try:
+            image = PropertyImage.get_image_by_id(image_id=image_id)
+
+            image_path = os.path.join(settings.MEDIA_ROOT, str(image.image))
+
+            if not os.path.exists(image_path):
+                return Response({"detail": "Image not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            mime_type, _ = mimetypes.guess_type(image_path)
+            if not mime_type:
+                mime_type = 'application/octet-stream'
+
+            with open(image_path, 'rb') as image_file:
+                response = HttpResponse(image_file.read(), content_type=mime_type)
+                return response
+
+        except PropertyImage.DoesNotExist:
+            return Response({"detail": "Image not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"detail": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
