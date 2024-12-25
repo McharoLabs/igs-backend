@@ -50,6 +50,16 @@ class House(models.Model):
         return self.title
     
     @classmethod
+    def mark_sold(cls, house_id: uuid.UUID) -> None:
+        house = cls.objects.filter(house_id=house_id).first()
+        
+        if house is None:
+            raise ValidationError("House not found")
+        
+        house.status = STATUS.SOLD.value
+        house.save()
+    
+    @classmethod
     def get_booked_house(cls, agent: Agent = None, landlord: LandLord = None) -> 'QuerySet[House]':
         """Booked house property according to the agent or landlord
 

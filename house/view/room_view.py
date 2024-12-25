@@ -8,7 +8,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from house.enums.room_category import ROOM_CATEGORY
 from house.models import Room, House
-from house.serializers import RequestRoomSerializer, ResponseRoomDetailSerializer, ResponseBookedRoomSerializer
+from house.serializers import RequestRoomSerializer, ResponseRoomDetailSerializer
 from shared.seriaizers import DetailResponseSerializer
 import logging
 from rest_framework.pagination import PageNumberPagination
@@ -25,7 +25,7 @@ class RoomViewSet(viewsets.ModelViewSet):
         """
         Custom method to define permissions for each action.
         """
-        if self.action == 'add_room' and self.action == 'booked_rooms':
+        if self.action == 'add_room':
             permission_classes = [permissions.IsAuthenticated, IsAgentOrLandLord]
         else:
             permission_classes = [permissions.AllowAny]
@@ -34,33 +34,6 @@ class RoomViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         return Room.objects.none()
-    
-    @swagger_auto_schema(
-        operation_description="Retrieve booked rooms for the authenticated agent or landlord.",
-        operation_summary="Retrieve Booked Rooms",
-        method="get",
-        tags=["Room"],
-        responses={200: ResponseBookedRoomSerializer(many=True), 400: "Invalid input data"},
-    )
-    @action(detail=False, methods=['get'])
-    def booked_rooms(self, request):
-        """Custom action to retrieve booked rooms for an agent or landlord."""
-        landlord = LandLord.get_landlord_by_username(username=request.user)
-        agent = Agent.get_agent_by_username(username=request.user)
-
-        if landlord is None and agent is None:
-            return Response(data={"detail": "You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)
-
-        try:
-          houses = Room.get_booked_rooms(agent=agent, landlord=landlord)
-          response_serializer = ResponseBookedRoomSerializer(houses, many=True)
-          return Response(data=response_serializer.data, status=status.HTTP_200_OK)
-        except ValueError as e:
-            logger.error(f"Validation error occurred: {e}", exc_info=True)
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            logger.error(f"Unexpected error occurred: {e}", exc_info=True)
-            return Response({"detail": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @swagger_auto_schema(
         operation_description="Add a new room for specific house by providing the necessary details such as house id, room number, price, etc.",

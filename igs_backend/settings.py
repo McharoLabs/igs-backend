@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "payment",
     "authentication",
     "api_doc",
+    "django_crontab",
 ]
 
 # AUTH_USER_MODEL = "authentication.User"
@@ -72,6 +73,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+CRONJOBS = [
+    ('* * * * *', 'house.cron.my_scheduled_job')
 ]
 
 log_directory = BASE_DIR / 'logs'

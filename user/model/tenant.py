@@ -11,6 +11,18 @@ class Tenant(User):
         db_table = 'tenant'
         
     @classmethod
+    def get_tenant_by_username(cls, username: str) -> 'Tenant':
+        """Retrieving tenant
+
+        Args:
+            username (str): Tenant username to retrieve the tenant instance
+
+        Returns:
+            Tenant: Tenant instance if found, otherwise None
+        """
+        return cls.objects.filter(username=username).first()
+        
+    @classmethod
     def save_tenant(cls, first_name: str, middle_name: str, last_name: str, phone_number: str, gender: str, username: str, email: str, password: str, avatar=None) -> None:
 
         if cls.is_email_exist(email=email):

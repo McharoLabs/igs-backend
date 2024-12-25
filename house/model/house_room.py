@@ -29,6 +29,20 @@ class Room(models.Model):
         db_table = 'room'
         
     @classmethod
+    def mark_rented(cls, room_id: uuid.UUID) -> None:
+        room = cls.objects.filter(room_id=room_id).first()
+        
+        if room is None:
+            raise ValidationError("Room not found")
+        
+        room.status = STATUS.RENTED.value
+        room.save()
+        
+    @classmethod
+    def get_room(cls, room_id: uuid.UUID) -> 'Room':
+        return cls.objects.filter(room_id=room_id).first()
+        
+    @classmethod
     def get_booked_rooms(cls, agent: Agent = None, landlord: LandLord = None) -> 'QuerySet[House]':
         """Booked room property according to the agent or landlord
 
