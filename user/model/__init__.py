@@ -2,4 +2,3 @@
 from .user import *
 from .agent import *
 from .landlord import *
-from .tenant import *

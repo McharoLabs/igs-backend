@@ -3,6 +3,7 @@ import uuid
 from django.db import models
 from django.apps import apps
 
+from account.model.account import Account
 from house.enums.availability_status import STATUS
 from house.enums.category import CATEGORY
 from house.enums.condition import CONDITION
@@ -41,6 +42,8 @@ class House(models.Model):
     total_bath_room = models.IntegerField()
     status = models.CharField(max_length=255, choices=STATUS.choices(), default=STATUS.default(), null=False, blank=False)
     listing_date = models.DateTimeField(default=timezone.now, editable=False)
+    is_active_account = models.BooleanField(default=True)
+    locked = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -48,6 +51,72 @@ class House(models.Model):
         
     def __str__(self) -> str:
         return self.title
+    
+    def update_status_to_booked(self) -> None:
+        """Update the status of the house to 'booked'."""
+        self.status = STATUS.BOOKED.value
+        self.save()
+        
+    @classmethod
+    def count_total_houses(cls, agent: Agent = None, landlord: LandLord = None) -> int:
+        """Counts the total number of houses for the given agent or landlord."""
+        if agent and landlord:
+            raise ValueError("can not provide both agent and landlord")
+        if agent:
+            return cls.objects.filter(agent=agent, locked=False, status__in=[STATUS.AVAILABLE.value, STATUS.BOOKED.value]).count()
+        elif landlord:
+            return cls.objects.filter(landlord=landlord, locked=False, status__in=[STATUS.AVAILABLE.value, STATUS.BOOKED.value]).count()
+        else:
+            raise ValueError("Either agent or landlord must be provided.")
+    
+    @classmethod
+    def activate_inactive_houses(cls, agent: Agent = None, landlord: LandLord = None):
+        """
+        Activates all inactive houses associated with the given agent or landlord.
+
+        Args:
+            agent (Agent, optional): The agent associated with the houses to activate.
+            landlord (LandLord, optional): The landlord associated with the houses to activate.
+
+        Raises:
+            ValueError: If both agent and landlord are provided.
+        """
+        inactive_houses = None
+        if agent and landlord:
+            raise ValueError("can not provider both agent and landlord")
+        if agent:
+            inactive_houses = cls.objects.filter(is_active_account=False, locked=False, status=STATUS.AVAILABLE.value, agent=agent)
+        if landlord:
+            inactive_houses = cls.objects.filter(is_active_account=False, locked=False, status=STATUS.AVAILABLE.value, landlord=landlord)
+        
+        for house in inactive_houses:
+            house.is_active_account = True
+            house.save(update_fields=["is_active_account"])
+            
+    @classmethod
+    def deactivate_active_houses(cls, agent: Agent = None, landlord: LandLord = None):
+        """
+        Deactivates all inactive houses associated with the given agent or landlord.
+
+        Args:
+            agent (Agent, optional): The agent associated with the houses to activate.
+            landlord (LandLord, optional): The landlord associated with the houses to activate.
+
+        Raises:
+            ValueError: If both agent and landlord are provided.
+        """
+        inactive_houses = None
+        if agent and landlord:
+            raise ValueError("can not provider both agent and landlord")
+        if agent:
+            inactive_houses = cls.objects.filter(is_active_account=True, locked=False, status=STATUS.AVAILABLE.value, agent=agent)
+        if landlord:
+            inactive_houses = cls.objects.filter(is_active_account=True, locked=False, status=STATUS.AVAILABLE.value, landlord=landlord)
+        
+        for house in inactive_houses:
+            house.is_active_account = False
+            house.save(update_fields=["is_active_account"])
+        
     
     @classmethod
     def mark_sold(cls, house_id: uuid.UUID) -> None:
@@ -80,40 +149,37 @@ class House(models.Model):
         if landlord:
             return cls.objects.filter(status=STATUS.BOOKED.value, landlord=landlord)
     
-    def is_owned_by_agent_or_landlord(self, agent=None, landlord=None) -> bool:
-        """Check if the house is owned by the provided agent or landlord.
+    # def is_owned_by_agent_or_landlord(self, agent=None, landlord=None) -> bool:
+    #     """Check if the house is owned by the provided agent or landlord.
 
-        Args:
-            agent (Agent, optional): The agent to check ownership against. Defaults to None.
-            landlord (LandLord, optional): The landlord to check ownership against. Defaults to None.
+    #     Args:
+    #         agent (Agent, optional): The agent to check ownership against. Defaults to None.
+    #         landlord (LandLord, optional): The landlord to check ownership against. Defaults to None.
 
-        Returns:
-            bool: True if either the agent or the landlord owns the house, False otherwise.
-        """
-        if agent and self.agent == agent:
-            return True
-        if landlord and self.landlord == landlord:
-            return True
-        return False
+    #     Returns:
+    #         bool: True if either the agent or the landlord owns the house, False otherwise.
+    #     """
+    #     if agent and self.agent == agent:
+    #         return True
+    #     if landlord and self.landlord == landlord:
+    #         return True
+    #     return False
     
-    def update_status_to_booked(self) -> None:
-        """Update the status of the house to 'booked'."""
-        self.status = STATUS.BOOKED.value
-        self.save()
+    
 
-    @staticmethod
-    def is_house_exists(house_id: uuid.UUID) -> bool:
-        """Check if a house with the given ID exists in the database.
+    # @staticmethod
+    # def is_house_exists(house_id: uuid.UUID) -> bool:
+    #     """Check if a house with the given ID exists in the database.
 
-        This method checks if a house with the provided house_id exists in the database.
+    #     This method checks if a house with the provided house_id exists in the database.
 
-        Args:
-            house_id (uuid.UUID): The unique identifier of the house to check.
+    #     Args:
+    #         house_id (uuid.UUID): The unique identifier of the house to check.
 
-        Returns:
-            bool: True if the house exists, False otherwise.
-        """
-        return House.objects.filter(house_id=house_id).exists()
+    #     Returns:
+    #         bool: True if the house exists, False otherwise.
+    #     """
+    #     return House.objects.filter(house_id=house_id).exists()
     
     @classmethod
     def get_house_by_agent_or_landlord(cls, agent=None, landlord=None, house_id=None) -> 'House':
@@ -142,22 +208,22 @@ class House(models.Model):
         
         return cls.objects.filter(filters).first()
     
-    @classmethod
-    def get_houses_for_agent_or_landlord(cls, agent=None, landlord=None) -> 'QuerySet[House]':
-        """Retrieve all houses for the given agent or landlord.
+    # @classmethod
+    # def get_houses_for_agent_or_landlord(cls, agent=None, landlord=None) -> 'QuerySet[House]':
+    #     """Retrieve all houses for the given agent or landlord.
 
-        Args:
-            agent (Agent, optional): The agent to get houses for. Defaults to None.
-            landlord (LandLord, optional): The landlord to get houses for. Defaults to None.
+    #     Args:
+    #         agent (Agent, optional): The agent to get houses for. Defaults to None.
+    #         landlord (LandLord, optional): The landlord to get houses for. Defaults to None.
 
-        Returns:
-            QuerySet: A queryset of houses associated with the provided agent or landlord.
-        """
-        if agent:
-            return cls.objects.filter(agent=agent)
-        if landlord:
-            return cls.objects.filter(landlord=landlord)
-        return cls.objects.none()
+    #     Returns:
+    #         QuerySet: A queryset of houses associated with the provided agent or landlord.
+    #     """
+    #     if agent:
+    #         return cls.objects.filter(agent=agent)
+    #     if landlord:
+    #         return cls.objects.filter(landlord=landlord)
+    #     return cls.objects.none()
     
     @classmethod
     def filter_houses(
@@ -174,6 +240,8 @@ class House(models.Model):
         
         filters = Q()
         filters &= Q(status=STATUS.AVAILABLE.value)
+        filters &= Q(is_active_account=True)
+        filters &= Q(locked=False)
 
         if category:
             filters &= Q(category=category)
@@ -273,6 +341,12 @@ class House(models.Model):
         Raises:
             ValueError: If the category is invalid or the price is not a valid decimal.
         """
+        
+        account = Account.get_account(agent=agent, landlord=landlord)
+        total_houses = cls.count_total_houses(agent=agent, landlord=landlord)
+        
+        if not account.can_upload_house(total_house=cls.count_total_houses(agent=agent, landlord=total_houses)):
+            raise ValueError("You have reached your maximum house upload limit.")
         
         if not CATEGORY.valid(category=category):
             raise ValueError(f"Invalid category '{category}'. Valid options are {', '.join([choice[0] for choice in CATEGORY.choices()])}.")

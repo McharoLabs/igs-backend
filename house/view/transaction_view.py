@@ -6,13 +6,18 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from house.models import Room, House, HouseTransaction
+from house.model.house import House
+from house.model.house_room import Room
+from house.model.house_transaction import HouseTransaction
 from house.serializers import RequestHouseTransactionSerializer, RequestRoomTransactionSerializer, ResponseBookingSerailizer
 from shared.seriaizers import DetailResponseSerializer
 import logging
 from rest_framework.pagination import PageNumberPagination
 from django.db import transaction
 from django.core.exceptions import ValidationError
+
+from user.model.agent import Agent
+from user.model.landlord import LandLord
 
 
 logger = logging.getLogger(__name__)
@@ -25,12 +30,9 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
         """
         Custom method to define permissions for each action.
         """
-        tenant_actions = {'house_booking', 'room_booking', 'tenant_house_bookings', 'tenant_room_bookings'}
         agent_landlord_actions = {'booked_houses', 'booked_rooms'}
 
-        if self.action in tenant_actions:
-            permission_classes = [permissions.IsAuthenticated, IsTenant]
-        elif self.action in agent_landlord_actions:
+        if self.action in agent_landlord_actions:
             permission_classes = [permissions.IsAuthenticated, IsAgentOrLandLord]
         else:
             permission_classes = [permissions.AllowAny]
@@ -93,61 +95,9 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
         except Exception as e:
             logger.error(f"Unexpected error occurred: {e}", exc_info=True)
             return Response({"detail": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-    @swagger_auto_schema(
-        operation_description="Retrieve booked rooms for the authenticated tenant.",
-        operation_summary="Retrieve Tenant Room Bookings",
-        method="get",
-        tags=["Booking"],
-        responses={200: ResponseBookingSerailizer(many=True), 400: "Invalid input data"},
-    )
-    @action(detail=False, methods=['get'])
-    def tenant_room_bookings(self, request):
-        """Custom action to retrieve booked rooms for tenant."""
-        tenant = Tenant.get_tenant_by_username(username=request.user)
-
-        if tenant is None:
-            return Response(data={"detail": "You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)
-
-        try:
-          bookings = HouseTransaction.get_booked_tenant_room(tenant=tenant)
-          response_serializer = ResponseBookingSerailizer(bookings, many=True)
-          return Response(data=response_serializer.data, status=status.HTTP_200_OK)
-        except ValidationError as e:
-            logger.error(f"Validation error occurred: {e}", exc_info=True)
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            logger.error(f"Unexpected error occurred: {e}", exc_info=True)
-            return Response({"detail": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-    @swagger_auto_schema(
-        operation_description="Retrieve booked house for the authenticated tenant.",
-        operation_summary="Retrieve Tenant House Bookings",
-        method="get",
-        tags=["Booking"],
-        responses={200: ResponseBookingSerailizer(many=True), 400: "Invalid input data"},
-    )
-    @action(detail=False, methods=['get'])
-    def tenant_house_bookings(self, request):
-        """Custom action to retrieve booked house for tenant."""
-        tenant = Tenant.get_tenant_by_username(username=request.user)
-
-        if tenant is None:
-            return Response(data={"detail": "You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)
-
-        try:
-          bookings = HouseTransaction.get_booked_tenant_house(tenant=tenant)
-          response_serializer = ResponseBookingSerailizer(bookings, many=True)
-          return Response(data=response_serializer.data, status=status.HTTP_200_OK)
-        except ValidationError as e:
-            logger.error(f"Validation error occurred: {e}", exc_info=True)
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            logger.error(f"Unexpected error occurred: {e}", exc_info=True)
-            return Response({"detail": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @swagger_auto_schema(
-        operation_description="Boking house by providing necessary details such as amount, house_id, the tenant_id etc",
+        operation_description="Boking house by providing necessary details such as amount, house_id etc",
         operation_summary="House Booking",
         method="post",
         tags=["Booking"],
@@ -172,9 +122,6 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
         if not user.is_authenticated:
             return Response(data={"detail": "You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)
         
-        
-        tenant = Tenant.get_by_username(username=user.username)
-        
         house = House.get_house_by_id(house_id=validated_data.get("house_id"))
         
         if house is None:
@@ -189,7 +136,6 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
             with transaction.atomic():               
                 response_message = HouseTransaction.save_booking(
                     house=house,
-                    tenant=tenant,
                     booking_fee=booking_fee
                 )
                 
@@ -205,7 +151,7 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
             return Response({"detail": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
     @swagger_auto_schema(
-        operation_description="Boking room by providing necessary details such as amount, room number, house_id, tenant_id etc",
+        operation_description="Boking room by providing necessary details such as amount, room number, house_id, etc",
         operation_summary="House Booking",
         method="post",
         tags=["Booking"],
@@ -231,8 +177,6 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
             return Response(data={"detail": "You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)
         
         
-        tenant = Tenant.get_by_username(username=user.username)
-        
         house = House.get_house_by_id(house_id=validated_data.get("house_id"))
         
         if house is None:
@@ -252,7 +196,6 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
             with transaction.atomic():               
                 response_message = HouseTransaction.save_booking(
                     house=house,
-                    tenant=tenant,
                     booking_fee=booking_fee,
                     room=room
                 )

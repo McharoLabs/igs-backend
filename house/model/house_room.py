@@ -30,9 +30,14 @@ class Room(models.Model):
     def __str__(self) -> str:
         return f"{self.house.title} - {self.room_number}"
         
-    def mark_rented(self) -> None:
-        self.status = STATUS.RENTED.value
-        self.save()
+    # def mark_rented(self) -> None:
+    #     self.status = STATUS.RENTED.value
+    #     self.save()
+    
+    @classmethod
+    def total_uploaded_rooms(cls, house: House) -> int:
+        """Count the total rooms for a specific house."""
+        return cls.objects.filter(house=house).count()
         
     @classmethod
     def get_room(cls, room_id: uuid.UUID) -> 'Room':
@@ -77,30 +82,6 @@ class Room(models.Model):
             Room: The room object if found, or None if no matching room exists.
         """
         return cls.objects.filter(house=house, room_id=room_id, status=STATUS.AVAILABLE.value).first()
-
-    @classmethod
-    def has_rooms_for_house(cls, house: House) -> bool:
-        """Check if a given house has rooms.
-
-        Args:
-            house (House): House instance used to check the rooms availability
-
-        Returns:
-            bool: True if any room exists for te house, otherwise false
-        """
-        return cls.objects.filter(house=house).exists()
-
-    @classmethod
-    def get_rooms_for_house(cls, house: House) -> 'QuerySet[Room]':
-        """Get all rooms associated with a specific house.
-
-        Args:
-            house (House): House instance used to filter all the corresponding rooms 
-
-        Returns:
-            QuerySet[Room]: A list of room instance corresponding to the house, otherwise None
-        """
-        return cls.objects.filter(house=house)
     
     @classmethod
     def add_room(cls, house: House, room_category: str, room_number: str, price: Decimal) -> str:
@@ -121,7 +102,7 @@ class Room(models.Model):
         Returns:
             str: A success message indicating that the room was added successfully.
         """
-        
+                
         if room_category and not ROOM_CATEGORY.valid(room_category=room_category):
             raise ValueError(f"Invalid room category '{room_category}'. Value options are {', '.join(choice[0] for choice in ROOM_CATEGORY.choices())}")
         
@@ -168,13 +149,15 @@ class Room(models.Model):
         Returns:
             QuerySet[Room]: A queryset of rooms that match the provided filtering criteria.
         """
-        
+                
         if room_category and not ROOM_CATEGORY.valid(room_category=room_category):
             raise ValueError(f"Invalid room category '{room_category}'. Value options are {', '.join(choice[0] for choice in ROOM_CATEGORY.choices())}")
 
         filters = Q()
         filters &= Q(status=STATUS.AVAILABLE.value)
         filters &= Q(house__status=STATUS.AVAILABLE.value)
+        filters &= Q(house__is_active_account=True)
+        filters &= Q(house__locked=False)
 
         if room_category:
             filters &= Q(room_category=room_category)

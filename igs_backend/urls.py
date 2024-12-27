@@ -24,7 +24,7 @@ from drf_yasg.views import get_schema_view
 schema_view = get_schema_view(
     openapi.Info(
         title="KEDESH API",
-        default_version='v1',
+        default_version='v2',
         description="Description of the API endpoints",
         terms_of_service="https://www.google.com/policies/terms/",
         contact=openapi.Contact(email="mcharoprofg23@gmail.com"),
@@ -38,11 +38,11 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 
     path("admin/", admin.site.urls),
-    path('api/v1/payment/', include('payment.urls')),
-    path('api/v1/user/', include('user.urls')),
-    path('api/v1/auth/', include('authentication.urls')),
-    path('api/v1/location/', include('location.urls')),
-    path('api/v1/house/', include('house.urls')),
+    path('api/v2/payment/', include('payment.urls')),
+    path('api/v2/user/', include('user.urls')),
+    path('api/v2/auth/', include('authentication.urls')),
+    path('api/v2/location/', include('location.urls')),
+    path('api/v2/house/', include('house.urls')),
 ]
 
 # if settings.DEBUG:

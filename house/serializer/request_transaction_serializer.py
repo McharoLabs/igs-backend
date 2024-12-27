@@ -1,7 +1,5 @@
 from rest_framework import serializers
 
-from house.enums.transaction_type import TRANSACTION_TYPE
-
 class RequestHouseTransactionSerializer(serializers.Serializer):
     house_id = serializers.UUIDField(required=True)
     booking_fee = serializers.DecimalField(max_digits=32, decimal_places=2, required=True)

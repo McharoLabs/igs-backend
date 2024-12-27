@@ -7,12 +7,16 @@ from rest_framework.decorators import action
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from house.enums.room_category import ROOM_CATEGORY
-from house.models import Room, House
+from house.model.house import House
+from house.model.house_room import Room
 from house.serializers import RequestRoomSerializer, ResponseRoomDetailSerializer
 from shared.seriaizers import DetailResponseSerializer
 import logging
 from rest_framework.pagination import PageNumberPagination
 from django.db import transaction
+
+from user.model.agent import Agent
+from user.model.landlord import LandLord
 
 
 logger = logging.getLogger(__name__)
@@ -59,6 +63,10 @@ class RoomViewSet(viewsets.ModelViewSet):
         
         try:                
             house = House.get_house_by_agent_or_landlord(agent=agent, landlord=landlord, house_id=validated_data.get("house_id"))
+            total_uploaded_rooms = Room.total_uploaded_rooms(house=house)
+            
+            if total_uploaded_rooms >= house.total_bed_room:
+                return Response(data={"detail": "You have reached your maximum room uploads"}, status=status.HTTP_403_FORBIDDEN)
             
             if house is None:
                 return Response(data={"detail": "No house found corresponding."}, status=status.HTTP_404_NOT_FOUND)

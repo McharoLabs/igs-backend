@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
 
 from user.enums.role_choice import ROLE_CHOICE
-from user.models import Agent, Landlord, Tenant
+from user.models import Agent, Landlord
 
 class RegisterUserSerializer(serializers.Serializer):
     role = serializers.ChoiceField(choices=[(role.value, role.value) for role in ROLE_CHOICE])
@@ -23,9 +23,7 @@ class RegisterUserSerializer(serializers.Serializer):
         # Save the user based on the role
         validated_data['password'] = make_password(password)
 
-        if role == 'Tenant':
-            user = Tenant.objects.create(**validated_data)
-        elif role == 'Landlord':
+        if role == 'Landlord':
             user = Landlord.objects.create(**validated_data)
         elif role == 'Agent':
             user = Agent.objects.create(**validated_data)

@@ -31,6 +31,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = env('SECRET_KEY')
 SITE_URL = env('SITE_URL')
 PROPERTY_IMAGE_BASE_URL = env('PROPERTY_IMAGE_BASE_URL')
+AVATOR_IMAGE_BASE_URL = env('AVATOR_IMAGE_BASE_URL')
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -58,6 +59,7 @@ INSTALLED_APPS = [
     "payment",
     "authentication",
     "api_doc",
+    "account",
     "django_crontab",
 ]
 
@@ -76,7 +78,10 @@ MIDDLEWARE = [
 ]
 
 CRONJOBS = [
-    ('* * * * *', 'house.cron.my_scheduled_job')
+    ('* * * * *', 'house.cron.my_scheduled_job'),
+    ('* * * * *', 'account.cron.expire_account_job'),
+    ('* * * * *', 'house.cron.activate_house_job'),
+    ('* * * * *', 'house.cron.deactivate_house_job')
 ]
 
 log_directory = BASE_DIR / 'logs'
