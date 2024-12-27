@@ -3,7 +3,6 @@ import logging
 import uuid
 from django.db import models
 
-from house.enums.category import CATEGORY
 from house.enums.room_category import ROOM_CATEGORY
 from house.enums.availability_status import STATUS
 from django.db.models import QuerySet
@@ -28,15 +27,12 @@ class Room(models.Model):
     class Meta:
         db_table = 'room'
         
-    @classmethod
-    def mark_rented(cls, room_id: uuid.UUID) -> None:
-        room = cls.objects.filter(room_id=room_id).first()
+    def __str__(self) -> str:
+        return f"{self.house.title} - {self.room_number}"
         
-        if room is None:
-            raise ValidationError("Room not found")
-        
-        room.status = STATUS.RENTED.value
-        room.save()
+    def mark_rented(self) -> None:
+        self.status = STATUS.RENTED.value
+        self.save()
         
     @classmethod
     def get_room(cls, room_id: uuid.UUID) -> 'Room':

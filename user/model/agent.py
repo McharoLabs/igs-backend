@@ -10,6 +10,9 @@ class Agent(User):
     class meta:
         db_table = 'agent'
         
+    def __str__(self) -> str:
+        return f"{self.first_name} {self.middle_name} {self.last_name}"
+        
     @classmethod
     def get_agent_by_username(cls, username: str) -> 'Agent':
         """This method gets agent by username

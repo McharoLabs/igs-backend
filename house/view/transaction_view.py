@@ -181,16 +181,16 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
             return Response(data={"detail": "House not found"}, status=status.HTTP_404_NOT_FOUND)
         
         try:
-            amount = Decimal(validated_data.get("amount"))
+            booking_fee = Decimal(validated_data.get("booking_fee"))
         except Exception as e:
-            return Response({"detail": "Invalid amount format."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Invalid booking fee format."}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             with transaction.atomic():               
                 response_message = HouseTransaction.save_booking(
                     house=house,
                     tenant=tenant,
-                    amount=amount
+                    booking_fee=booking_fee
                 )
                 
                 house.update_status_to_booked()
@@ -244,7 +244,7 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
             return Response(data={"detail": f"Room not available for booking"}, status=status.HTTP_404_NOT_FOUND)
         
         try:
-            amount = Decimal(validated_data.get("amount"))
+            booking_fee = Decimal(validated_data.get("booking_fee"))
         except Exception as e:
             return Response({"detail": "Invalid amount format."}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -253,7 +253,7 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
                 response_message = HouseTransaction.save_booking(
                     house=house,
                     tenant=tenant,
-                    amount=amount,
+                    booking_fee=booking_fee,
                     room=room
                 )
                 

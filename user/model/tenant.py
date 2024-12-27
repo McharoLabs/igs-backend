@@ -10,6 +10,9 @@ class Tenant(User):
     class Meta:
         db_table = 'tenant'
         
+    def __str__(self) -> str:
+        return f"{self.first_name} {self.middle_name} {self.last_name}"
+        
     @classmethod
     def get_tenant_by_username(cls, username: str) -> 'Tenant':
         """Retrieving tenant

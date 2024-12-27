@@ -10,6 +10,9 @@ class LandLord(User):
     class Meta:
         db_table = 'landlord'
         
+    def __str__(self) -> str:
+        return f"{self.first_name} {self.middle_name} {self.last_name}"
+        
     @classmethod
     def get_landlord_by_username(cls, username: str) -> 'LandLord':
         """This method gets landlord by username from the database

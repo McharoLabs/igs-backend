@@ -23,7 +23,8 @@ class HouseTransaction(models.Model):
     house = models.ForeignKey(House, on_delete=models.RESTRICT, related_name="house_transactions", null=True)
     room = models.ForeignKey(Room, on_delete=models.RESTRICT, related_name="room_transactions", null=True)
     tenant = models.ForeignKey(Tenant, on_delete=models.RESTRICT, related_name="tenant_transactions")
-    amount = models.DecimalField(max_digits=32, decimal_places=2)
+    booking_fee = models.DecimalField(max_digits=32, decimal_places=2, null=False, blank=False)
+    amount = models.DecimalField(max_digits=32, decimal_places=2, null=True)
     transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPE.choices(), default=TRANSACTION_TYPE.default(), null=False, blank=False)
     is_completed = models.BooleanField(default=False)
     listing_date = models.DateTimeField(default=timezone.now, editable=False)
@@ -31,14 +32,20 @@ class HouseTransaction(models.Model):
     class Meta:
         db_table = 'house_transaction'
         
-    def complete_transaction(self) -> None:
+    def __str__(self) -> str:
+        return str(self.transaction_id)
+        
+    def complete_transaction(self, amount: Decimal = None) -> None:
         try:
             if self.room:
-                TenantRoom.tenant_in(tenant=self.tenant, room=self.room)
+                if amount is None:
+                    raise ValidationError("Amount is required for booking room")
+                TenantRoom.tenant_in(amount=amount, tenant=self.tenant, room=self.room)
             elif self.house and not self.room:
                 House.mark_sold(house_id=self.house.house_id)
             
             self.is_completed = True
+            self.amount = amount
             self.save()
         except ValidationError as e:
             logger.error(f"Failed to complete transaction for {self.transaction_id}: {e}", exc_info=True)
@@ -58,13 +65,13 @@ class HouseTransaction(models.Model):
                     logger.error(f"Failed to complete cron transaction for booking {booking.transaction_id}: {e}", exc_info=True)
                     
     @classmethod
-    def cron_room_complete_transaction(cls) -> None:
+    def cron_room_complete_transaction(cls, amount: Decimal) -> None:
         bookings = cls.objects.filter(room__status=STATUS.BOOKED.value, is_completed=False)
         if bookings:
             logger.info(f"Trying to auto complete transactions: {[transaction.transaction_id for transaction in bookings]}")
             for booking in bookings:
                 try:
-                    booking.complete_transaction()
+                    booking.complete_transaction(amount)
                 except Exception as e:
                     logger.error(f"Failed to complete cron transaction for booking {booking.transaction_id}: {e}", exc_info=True)
 
@@ -149,7 +156,7 @@ class HouseTransaction(models.Model):
         return cls.objects.filter(room__status=STATUS.BOOKED.value, tenant=tenant, is_completed = False)
         
     @classmethod
-    def save_booking(cls, house: House, tenant: Tenant, amount: Decimal, room: Room = None) -> str:
+    def save_booking(cls, house: House, tenant: Tenant, booking_fee: Decimal, room: Room = None) -> str:
         """
         Save a booking transaction for a tenant in a specific house and room.
 
@@ -161,7 +168,7 @@ class HouseTransaction(models.Model):
         Args:
             house (House): The house that the tenant is booking.
             tenant (Tenant): The tenant who is making the booking.
-            amount (Decimal): The amount paid for the booking.
+            booking_fee (booking_fee): The amount paid for the booking.
             room (Room, optional): The specific room booked by the tenant. Defaults to None.
 
         Returns:
@@ -171,7 +178,7 @@ class HouseTransaction(models.Model):
             house=house,
             room=room,
             tenant=tenant,
-            amount=amount,
+            booking_fee=booking_fee,
         )
 
         transaction.save()

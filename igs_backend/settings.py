@@ -36,7 +36,7 @@ PROPERTY_IMAGE_BASE_URL = env('PROPERTY_IMAGE_BASE_URL')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '192.168.10.208']
 
 
 # Application definition
