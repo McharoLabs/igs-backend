@@ -6,6 +6,10 @@ from datetime import timedelta
 from account.model.subscription_plan import SubscriptionPlan
 from user.models import Agent, LandLord
 from django.db.models import QuerySet
+from django.db import transaction
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Account(models.Model):
     account_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -32,9 +36,11 @@ class Account(models.Model):
         Expires the account by setting `is_active` to False, only if the account is still active 
         and the `end_date` is in the future.
         """
-        if self.is_active and self.end_date > timezone.now():
-            self.is_active = False
-            self.save()
+        if self.is_active:
+            if self.end_date <= timezone.now():
+                self.is_active = False
+                self.save()
+                logger.info(f"Account {self.account_id} expired and deactivated.")
 
     
     def account_owner(self) -> str:
@@ -61,6 +67,43 @@ class Account(models.Model):
             return True
         
         return False
+    
+    @classmethod
+    def subscribe(cls, plan: SubscriptionPlan, agent: Agent = None, landlord: LandLord = None) -> str:
+        """Subscribe the plan and create a new account for the agent or landlord and deactivate the previous active account if found
+
+        Args:
+            plan (SubscriptionPlan): Subscription plan instance for the agent or landlord
+            agent (Agent, optional): Agent for the subscribed account. Defaults to None.
+            landlord (LandLord, optional): Landlord for the subscribed account. Defaults to None.
+
+        Raises:
+            ValueError: If agent and landlord are bot instance, can not provide both agent and landlord error is raised
+
+        Returns:
+            str: Success message for created account
+        """
+        if agent and landlord:
+            raise ValueError("Can not provide both agent and landlord")
+        
+        with transaction.atomic():
+            current_active_account = cls.objects.filter(agent=agent, landlord=landlord, is_active=True).first()
+
+            if current_active_account:
+                current_active_account.is_active = False
+                current_active_account.save()
+
+            account = cls(
+                agent=agent,
+                landlord=landlord,
+                plan=plan
+            )
+
+            account.save()
+
+            logger.info(f"Plan subscription for {agent if agent else landlord}")
+        
+        return f"You have subscribed to plan {account.plan}, the account expires on {str(account.end_date)}"
 
     @classmethod
     def get_account(cls, agent: Agent = None, landlord: LandLord = None) -> 'Account':
@@ -80,16 +123,19 @@ class Account(models.Model):
             Account: The active `Account` associated with the given agent or landlord. If no active account 
             is found, the method returns `None`.
         """
+        test = cls.objects.filter(is_active=True).first()
+        print(test)
+        account = None
         if agent and landlord:
             raise ValueError("Cannot provide both agent and landlord.")
         
         if agent:
-            return cls.objects.filter(agent=agent, is_active=True).first()
+            account = cls.objects.filter(agent=agent, is_active=True).first()
         
         if landlord:
-            return cls.objects.filter(landlord=landlord, is_active=True).first()
+            account = cls.objects.filter(landlord=landlord, is_active=True).first()
         
-        raise ValueError("Must provide either an agent or a landlord.")
+        return account
     
     @classmethod
     def get_active_accounts(cls) -> 'QuerySet[Account]':

@@ -11,6 +11,18 @@ class SubscriptionPlan(models.Model):
 
     def __str__(self):
         return f"{self.name} - ${self.price} (Max {self.max_houses} Houses)"
+    
+    @classmethod
+    def get_plan_by_id(cls, subscription_plan_id: uuid.UUID) -> 'SubscriptionPlan':
+        """Retrieve plan by subscription plan id
+
+        Args:
+            subscription_plan_id (uuid.UUID): Subscription plan id to find the plan
+
+        Returns:
+            SubscriptionPlan: Subscription plan instance if found, otherwise None
+        """
+        return cls.objects.filter(subscription_plan_id=subscription_plan_id).first()
 
     @classmethod
     def get_all_plans(cls) -> 'QuerySet[SubscriptionPlan]':

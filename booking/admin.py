@@ -9,10 +9,10 @@ class HouseBookingAdmin(admin.ModelAdmin):
         'house', 
         'room', 
         'booking_fee', 
-        'is_completed', 
+        'has_owner_read', 
         'listing_date'
     ]
-    list_filter = ['is_completed', 'house']
+    list_filter = ['has_owner_read', 'house']
     search_fields = ['booking_id']
     ordering = ['-listing_date']
 

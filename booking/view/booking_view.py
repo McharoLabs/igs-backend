@@ -58,7 +58,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             return Response(data={"detail": "You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)
 
         try:
-          bookings = Booking.get_booked_owner_house(agent=agent, landlord=landlord)
+          bookings = Booking.get_booked_owner_houses(agent=agent, landlord=landlord)
           response_serializer = ResponseBookingSerailizer(bookings, many=True)
           return Response(data=response_serializer.data, status=status.HTTP_200_OK)
         except ValidationError as e:
@@ -85,7 +85,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             return Response(data={"detail": "You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)
 
         try:
-          bookings = Booking.get_booked_owner_room(agent=agent, landlord=landlord)
+          bookings = Booking.get_booked_owner_rooms(agent=agent, landlord=landlord)
           response_serializer = ResponseBookingSerailizer(bookings, many=True)
           return Response(data=response_serializer.data, status=status.HTTP_200_OK)
         except ValidationError as e:

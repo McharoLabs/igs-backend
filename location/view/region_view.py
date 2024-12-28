@@ -22,12 +22,8 @@ class RegionViewSet(viewsets.ViewSet):
         """
         if self.action == 'add_region':
             permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
-        elif self.action == 'retrieve_region':
-            permission_classes = [permissions.IsAuthenticated]
-        elif self.action == 'list_regions':
-            permission_classes = [permissions.IsAuthenticated]
         else:
-            permission_classes = [permissions.IsAuthenticated]
+            permission_classes = [permissions.AllowAny]
         
         return [permission() for permission in permission_classes]
 

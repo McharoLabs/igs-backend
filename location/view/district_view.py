@@ -21,10 +21,6 @@ class DistrictViewSet(viewsets.ModelViewSet):
         """
         if self.action == 'add_district':
             permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
-        elif self.action == 'retrieve_district':
-            permission_classes = [permissions.IsAuthenticated]
-        elif self.action == 'list_districts':
-            permission_classes = [permissions.IsAuthenticated]
         else:
             permission_classes = [permissions.AllowAny]
         

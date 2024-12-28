@@ -31,6 +31,7 @@ class AgentRegistrationView(generics.GenericAPIView):
         request_serializer = RequestAgentRegistrationSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
         validated_data = request_serializer.validated_data
+        print(validated_data)
         try:
             Agent.save_agent(
                 first_name=validated_data.get("first_name"),

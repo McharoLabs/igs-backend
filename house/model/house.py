@@ -343,9 +343,13 @@ class House(models.Model):
         """
         
         account = Account.get_account(agent=agent, landlord=landlord)
+        
+        if account is None:
+            raise ValueError("You do not have active account, activate your account to continue")
+
         total_houses = cls.count_total_houses(agent=agent, landlord=landlord)
         
-        if not account.can_upload_house(total_house=cls.count_total_houses(agent=agent, landlord=total_houses)):
+        if not account.can_upload_house(total_house=cls.count_total_houses(agent=agent, landlord=landlord)):
             raise ValueError("You have reached your maximum house upload limit.")
         
         if not CATEGORY.valid(category=category):

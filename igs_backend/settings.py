@@ -37,7 +37,8 @@ AVATOR_IMAGE_BASE_URL = env('AVATOR_IMAGE_BASE_URL')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '192.168.10.208']
+# ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '192.168.10.208']
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -81,7 +82,8 @@ CRONJOBS = [
     ('* * * * *', 'booking.cron.my_scheduled_job'),
     ('* * * * *', 'account.cron.expire_account_job'),
     ('* * * * *', 'house.cron.activate_house_job'),
-    ('* * * * *', 'house.cron.deactivate_house_job')
+    ('* * * * *', 'house.cron.deactivate_house_job'),
+    ('* * * * *', 'payment.cron.auto_activate_account_job')
 ]
 
 log_directory = BASE_DIR / 'logs'

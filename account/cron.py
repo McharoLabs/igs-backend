@@ -13,8 +13,6 @@ def expire_account_job():
             
             for account in accounts:
                 account.expire_account()
-        else:
-            logger.info("No active accounts found to expire.")
     
     except Exception as e:
         logger.error(f"Error expiring accounts: {e}", exc_info=True)
