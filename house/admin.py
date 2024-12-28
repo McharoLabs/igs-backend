@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import House, Room, HouseTransaction
+from .models import House, Room
 from django.utils.timezone import now
 from django.utils.html import format_html
 
@@ -33,22 +33,3 @@ class RoomAdmin(admin.ModelAdmin):
     search_fields = ['room_number', 'house__title']
     ordering = ['house', 'room_number']
     list_per_page = 20
-
-    
-@admin.register(HouseTransaction)
-class HouseTransactionAdmin(admin.ModelAdmin):
-    list_display = [
-        'house', 
-        'room', 
-        'booking_fee', 
-        'is_completed', 
-        'listing_date'
-    ]
-    list_filter = ['transaction_type', 'is_completed', 'house']
-    search_fields = ['transaction_id']
-    ordering = ['-listing_date']
-
-    def get_house_details(self, obj):
-        return f"{obj.house.title} - {obj.room.name if obj.room else 'N/A'}"
-
-    get_house_details.short_description = "House and Room Details"

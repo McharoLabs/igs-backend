@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import cast
 import uuid
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
@@ -17,6 +18,8 @@ from rest_framework.pagination import PageNumberPagination
 from django.db import transaction
 import os
 import mimetypes
+
+from user.models import Agent, LandLord, User
 
 
 logger = logging.getLogger(__name__)
@@ -50,13 +53,14 @@ class PropertyImageViewSet(viewsets.ModelViewSet):
             400: "Invalid input data"},
     )
     @action(detail=False, methods=['post'])
-    def upload_images(self, request):
+    def upload_images(self, request: HttpRequest):
+        user = cast(User, request.user)
         request_serializer = RequestPropertyImageSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
         validated_data = request_serializer.validated_data
         
-        landlord = LandLord.get_landlord_by_username(username=request.user)
-        agent = Agent.get_agent_by_username(username=request.user)
+        landlord = LandLord.get_landlord_by_phone_number(phone_number=user.phone_number)
+        agent = Agent.get_agent_by_phone_number(phone_number=user.phone_number)
 
         if landlord is None and agent is None:
             return Response(data={"detail": "You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)

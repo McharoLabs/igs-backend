@@ -2,12 +2,11 @@ from django.contrib.auth.models import BaseUserManager
 from django.db import transaction
 
 class MyUserManager(BaseUserManager):
-    def create_user(self, first_name: str, last_name: str, username: str, middle_name:str = None, email: str=None, phone_number: str=None, password: str=None, **extra_fields):
+    def create_user(self, first_name: str, last_name: str, middle_name:str = None, email: str=None, phone_number: str=None, password: str=None, **extra_fields):
         """
-        Creates and saves a regular user with the given username, email, phone number, and password.
+        Creates and saves a regular user with the given  email, phone number, and password.
         """
-        if not username:
-            raise ValueError("The Username field is required.")
+
         if not email:
             raise ValueError("The Email field is required.")
         if not phone_number:
@@ -23,9 +22,7 @@ class MyUserManager(BaseUserManager):
             middle_name=middle_name,
             last_name=last_name,
             phone_number=phone_number,
-            username=username,
             email=email,
-            is_verified=True,
             **extra_fields
         )
         user.set_password(password)
@@ -34,9 +31,9 @@ class MyUserManager(BaseUserManager):
         return user
 
     @transaction.atomic
-    def create_superuser(self, first_name, last_name, username, middle_name=None, email=None, phone_number=None, password=None, **extra_fields):
+    def create_superuser(self, first_name, last_name, middle_name=None, email=None, phone_number=None, password=None, **extra_fields):
         """
-        Creates and saves a superuser with the given username, email, phone number, and password.
+        Creates and saves a superuser with the given email, phone number, and password.
         """
         # Set superuser-specific flags
         extra_fields.setdefault("is_admin", True)
@@ -54,7 +51,6 @@ class MyUserManager(BaseUserManager):
             first_name=first_name,
             middle_name=middle_name,
             last_name=last_name,
-            username=username,
             email=email,
             phone_number=phone_number,
             password=password,

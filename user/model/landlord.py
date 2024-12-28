@@ -14,24 +14,22 @@ class LandLord(User):
         return f"{self.first_name} {self.middle_name} {self.last_name}"
         
     @classmethod
-    def get_landlord_by_username(cls, username: str) -> 'LandLord':
-        """This method gets landlord by username from the database
+    def get_landlord_by_phone_number(cls, phone_number: str) -> 'LandLord':
+        """Retrieve the landlord from the database by phone number
 
         Args:
-            username (str): username
+            phone_number (str): Phone number of the landlord to find with 
 
         Returns:
             LandLord: LandLord instance from the database if found, otherwise None
         """
-        return cls.objects.filter(username=username).first()
+        return cls.objects.filter(phone_number=phone_number).first()
         
     @classmethod
-    def save_landlord(cls, first_name: str, middle_name: str, last_name: str, phone_number: str, gender: str, username: str, email: str, password: str, avatar=None) -> None:
+    def save_landlord(cls, first_name: str, middle_name: str, last_name: str, phone_number: str, gender: str, email: str, password: str, avatar=None) -> None:
 
         if cls.is_email_exist(email=email):
             raise ValidationError(f"Land lord with the email '{email}' already exists.")
-        if cls.is_username_exist(username=username):
-            raise ValidationError(f"Land lord with the username '{username}' already exists.")
         if cls.is_phone_number_exist(phone_number=phone_number):
             raise ValidationError(f"Land lord with phone number '{phone_number}' already exists.")
         
@@ -42,7 +40,6 @@ class LandLord(User):
               last_name=last_name,
               phone_number=phone_number,
               gender=gender,
-              username=username,
               email=email,
               password=password,
               avatar=avatar if avatar else 'avatars/avatar1.png'

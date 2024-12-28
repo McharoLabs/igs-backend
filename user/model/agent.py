@@ -14,24 +14,22 @@ class Agent(User):
         return f"{self.first_name} {self.middle_name} {self.last_name}"
         
     @classmethod
-    def get_agent_by_username(cls, username: str) -> 'Agent':
-        """This method gets agent by username
+    def get_agent_by_phone_number(cls, phone_number: str) -> 'Agent':
+        """Retrieve the agent from the database by the phone number
 
         Args:
-            username (str): username to find with
+            phone_number (str): Phone number to find with
 
         Returns:
             Agent: Agent instance if found, otherwise None
         """
-        return cls.objects.filter(username=username).first()
+        return cls.objects.filter(phone_number=phone_number).first()
         
     @classmethod
-    def save_agent(cls, first_name: str, middle_name: str, last_name: str, phone_number: str, gender: str, username: str, email: str, password: str, avatar=None) -> None:
+    def save_agent(cls, first_name: str, middle_name: str, last_name: str, phone_number: str, gender: str, email: str, password: str, avatar=None) -> None:
 
         if cls.is_email_exist(email=email):
             raise ValidationError(f"An agent with the email '{email}' already exists.")
-        if cls.is_username_exist(username=username):
-            raise ValidationError(f"An agent with the username '{username}' already exists.")
         if cls.is_phone_number_exist(phone_number=phone_number):
             raise ValidationError(f"An agent with phone number '{phone_number}' already exists.")
         
@@ -42,7 +40,6 @@ class Agent(User):
               last_name=last_name,
               phone_number=phone_number,
               gender=gender,
-              username=username,
               email=email,
               password=password,
               avatar=avatar if avatar else 'avatars/avatar1.png'

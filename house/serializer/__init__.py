@@ -3,6 +3,4 @@ from .respnse_house_serializer import ResponseHouseSerializer
 from .request_room_serializer import RequestRoomSerializer
 from .response_house_detail_serailizer import ResponseHouseDetailSerializer
 from .response_room_serializer import ResponseRoomSerializer, ResponseRoomDetailSerializer
-from .request_transaction_serializer import RequestHouseTransactionSerializer, RequestRoomTransactionSerializer
 from .request_property_image_serializer import RequestPropertyImageSerializer
-from .response_booking_serailizer import ResponseBookingSerailizer

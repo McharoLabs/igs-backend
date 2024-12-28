@@ -19,6 +19,7 @@ from rest_framework.pagination import PageNumberPagination
 from django.db import transaction
 from django.core.exceptions import PermissionDenied
 
+from user.models import Agent, LandLord
 from user.models import User
 
 
@@ -64,8 +65,8 @@ class HouseViewSet(viewsets.ModelViewSet):
         if district is None:
             return Response(data={"detail": "District not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        landlord = LandLord.get_landlord_by_username(username=request.user)
-        agent = Agent.get_agent_by_username(username=request.user)
+        landlord = LandLord.get_landlord_by_phone_number(phone_number=request.user)
+        agent = Agent.get_agent_by_phone_number(phone_number=request.user)
 
         if landlord is None and agent is None:
             return Response(data={"detail": "You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)

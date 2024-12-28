@@ -1,18 +1,7 @@
 import logging
-from account.model.account import Account
-from house.model.house import House
-from house.model.house_transaction import HouseTransaction
-
+from account.models import Account
+from house.models import House
 logger = logging.getLogger(__name__)
-  
-  
-def my_scheduled_job():
-    try:
-        HouseTransaction.cron_house_complete_transaction()
-        HouseTransaction.cron_room_complete_transaction(amount="90000")
-    except Exception as e:
-        logger.error(f"Error occurred while running cron job: {e}", exc_info=True)
-        
 
 def activate_house_job():
     try:

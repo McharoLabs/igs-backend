@@ -7,6 +7,6 @@ class LoggedInUserDetailSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'user_id', 'first_name', 'middle_name', 'last_name', 'phone_number', 'gender', 
-            'username', 'email', 'password', 'avatar', 'is_verified', 'is_active', 
+            'email', 'password', 'avatar','is_active', 
             'is_staff', 'is_admin', 'is_superuser'
         ]

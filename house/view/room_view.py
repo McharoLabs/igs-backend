@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import cast
 from django.http import HttpRequest
 from rest_framework import viewsets, permissions, status
 from authentication.custom_permissions import *
@@ -7,16 +8,14 @@ from rest_framework.decorators import action
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from house.enums.room_category import ROOM_CATEGORY
-from house.model.house import House
-from house.model.house_room import Room
+from house.models import Room, House
 from house.serializers import RequestRoomSerializer, ResponseRoomDetailSerializer
 from shared.seriaizers import DetailResponseSerializer
 import logging
 from rest_framework.pagination import PageNumberPagination
 from django.db import transaction
 
-from user.model.agent import Agent
-from user.model.landlord import LandLord
+from user.model import User, Agent, LandLord
 
 
 logger = logging.getLogger(__name__)
@@ -49,14 +48,14 @@ class RoomViewSet(viewsets.ModelViewSet):
     )
     @action(detail=False, methods=['post'])
     @transaction.atomic(savepoint=False)
-    def add_room(self, request):
-        """Custom action to add a new room."""
+    def add_room(self, request: HttpRequest):
+        user = cast(User, request.user)
         request_serializer = RequestRoomSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
         validated_data = request_serializer.validated_data
 
-        landlord = LandLord.get_landlord_by_username(username=request.user)
-        agent = Agent.get_agent_by_username(username=request.user)
+        landlord = LandLord.get_landlord_by_phone_number(phone_number=user.phone_number)
+        agent = Agent.get_agent_by_phone_number(phone_number=user.phone_number)
 
         if landlord is None and agent is None:
             return Response(data={"detail": "You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)

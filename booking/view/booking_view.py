@@ -6,25 +6,24 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from house.model.house import House
-from house.model.house_room import Room
-from house.model.house_transaction import HouseTransaction
-from house.serializers import RequestHouseTransactionSerializer, RequestRoomTransactionSerializer, ResponseBookingSerailizer
+from booking.models import Booking
+from booking.serializers import RequestHouseBookingSerializer, ResponseBookingSerailizer, RequestRoomBookingSerializer
+from house.models import House, Room
 from shared.seriaizers import DetailResponseSerializer
 import logging
 from rest_framework.pagination import PageNumberPagination
 from django.db import transaction
 from django.core.exceptions import ValidationError
 
-from user.model.agent import Agent
-from user.model.landlord import LandLord
+from user.models import LandLord, Agent
+
 
 
 logger = logging.getLogger(__name__)
 
-class HouseTransactionViewSet(viewsets.ModelViewSet):
+class BookingViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
-        return RequestHouseTransactionSerializer
+        return RequestHouseBookingSerializer
 
     def get_permissions(self):
         """
@@ -40,7 +39,7 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
     def get_queryset(self):
-        return HouseTransaction.objects.none()
+        return Booking.objects.none()
     
     @swagger_auto_schema(
         operation_description="Retrieve booked houses for the authenticated agent or landlord.",
@@ -52,14 +51,14 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def booked_houses(self, request):
         """Custom action to retrieve booked houses for an agent or landlord."""
-        landlord = LandLord.get_landlord_by_username(username=request.user)
-        agent = Agent.get_agent_by_username(username=request.user)
+        landlord = LandLord.get_landlord_by_phone_number(phone_number=request.user)
+        agent = Agent.get_agent_by_phone_number(phone_number=request.user)
 
         if landlord is None and agent is None:
             return Response(data={"detail": "You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)
 
         try:
-          bookings = HouseTransaction.get_booked_owner_house(agent=agent, landlord=landlord)
+          bookings = Booking.get_booked_owner_house(agent=agent, landlord=landlord)
           response_serializer = ResponseBookingSerailizer(bookings, many=True)
           return Response(data=response_serializer.data, status=status.HTTP_200_OK)
         except ValidationError as e:
@@ -79,14 +78,14 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def booked_rooms(self, request):
         """Custom action to retrieve booked rooms for an agent or landlord."""
-        landlord = LandLord.get_landlord_by_username(username=request.user)
-        agent = Agent.get_agent_by_username(username=request.user)
+        landlord = LandLord.get_landlord_by_phone_number(phone_number=request.user)
+        agent = Agent.get_agent_by_phone_number(phone_number=request.user)
 
         if landlord is None and agent is None:
             return Response(data={"detail": "You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)
 
         try:
-          bookings = HouseTransaction.get_booked_owner_room(agent=agent, landlord=landlord)
+          bookings = Booking.get_booked_owner_room(agent=agent, landlord=landlord)
           response_serializer = ResponseBookingSerailizer(bookings, many=True)
           return Response(data=response_serializer.data, status=status.HTTP_200_OK)
         except ValidationError as e:
@@ -101,7 +100,7 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
         operation_summary="House Booking",
         method="post",
         tags=["Booking"],
-        request_body=RequestHouseTransactionSerializer,
+        request_body=RequestHouseBookingSerializer,
         responses={
             200: DetailResponseSerializer(many=False),
             201: "Data saved to database",
@@ -115,7 +114,7 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     @transaction.atomic(savepoint=False)
     def house_booking(self, request: HttpRequest):
-        request_serializer = RequestHouseTransactionSerializer(data=request.data)
+        request_serializer = RequestHouseBookingSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
         validated_data = request_serializer.validated_data
         user = request.user
@@ -134,7 +133,7 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
         
         try:
             with transaction.atomic():               
-                response_message = HouseTransaction.save_booking(
+                response_message = Booking.save_booking(
                     house=house,
                     booking_fee=booking_fee
                 )
@@ -155,7 +154,7 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
         operation_summary="House Booking",
         method="post",
         tags=["Booking"],
-        request_body=RequestRoomTransactionSerializer,
+        request_body=RequestRoomBookingSerializer,
         responses={
             200: DetailResponseSerializer(many=False),
             201: "Data saved to database",
@@ -169,7 +168,7 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     @transaction.atomic(savepoint=False)
     def room_booking(self, request: HttpRequest):
-        request_serializer = RequestRoomTransactionSerializer(data=request.data)
+        request_serializer = RequestRoomBookingSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
         validated_data = request_serializer.validated_data
         user = request.user
@@ -194,7 +193,7 @@ class HouseTransactionViewSet(viewsets.ModelViewSet):
         
         try:
             with transaction.atomic():               
-                response_message = HouseTransaction.save_booking(
+                response_message = Booking.save_booking(
                     house=house,
                     booking_fee=booking_fee,
                     room=room

@@ -8,7 +8,6 @@ class RequestLandLordRegistrationSerializer(serializers.Serializer):
     last_name = serializers.CharField(max_length=30, required=True, min_length=1)
     phone_number = serializers.CharField(max_length=15, required=True, min_length=1)
     gender = serializers.ChoiceField(choices=[(gender.value, gender.value) for gender in GENDER], required=True)
-    username = serializers.CharField(max_length=50, required=True, min_length=1)
     email = serializers.EmailField(max_length=100, required=True)
     password = serializers.CharField(max_length=255, write_only=True, min_length=6)
     avatar = serializers.ImageField(required=False, allow_null=True)

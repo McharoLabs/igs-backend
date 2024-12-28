@@ -43,6 +43,8 @@ urlpatterns = [
     path('api/v2/auth/', include('authentication.urls')),
     path('api/v2/location/', include('location.urls')),
     path('api/v2/house/', include('house.urls')),
+    path('api/v2/booking/', include('booking.urls')),
+    path('api/v2/account/', include('account.urls')),
 ]
 
 # if settings.DEBUG:

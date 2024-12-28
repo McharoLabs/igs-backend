@@ -5,6 +5,5 @@ router = DefaultRouter()
 
 router.register(r'houses', views.HouseViewSet, basename='house')
 router.register(r'rooms', views.RoomViewSet, basename='room')
-router.register(r'bookings', views.HouseTransactionViewSet, basename='booking')
 router.register(r'images', views.PropertyImageViewSet, basename='image')
 urlpatterns = router.urls

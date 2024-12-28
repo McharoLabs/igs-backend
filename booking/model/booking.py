@@ -5,34 +5,34 @@ from django.utils import timezone
 from django.db.models.query import QuerySet
 from django.core.exceptions import ValidationError
 
-from house.model.house import House
-from house.model.house_room import Room
-from user.model.agent import Agent
-from user.model.landlord import LandLord
+from house.models import House
+from house.models import Room
+from user.models import Agent
+from user.models import LandLord
 from house.enums.availability_status import STATUS
 
 import logging
 
 logger = logging.getLogger(__name__)
 
-class HouseTransaction(models.Model):
-    transaction_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    house = models.ForeignKey(House, on_delete=models.RESTRICT, related_name="house_transactions", null=True)
-    room = models.ForeignKey(Room, on_delete=models.RESTRICT, related_name="room_transactions", null=True)
+class Booking(models.Model):
+    booking_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    house = models.ForeignKey(House, on_delete=models.RESTRICT, related_name="house_booking", null=True)
+    room = models.ForeignKey(Room, on_delete=models.RESTRICT, related_name="room_booking", null=True)
     booking_fee = models.DecimalField(max_digits=32, decimal_places=2, null=False, blank=False)
     amount = models.DecimalField(max_digits=32, decimal_places=2, null=True)
     is_completed = models.BooleanField(default=False)
     listing_date = models.DateTimeField(default=timezone.now, editable=False)
 
     class Meta:
-        db_table = 'house_transaction'
+        db_table = 'booking'
         
     def __str__(self) -> str:
-        return str(self.transaction_id)
+        return str(self.booking_id)
         
     @classmethod
-    def get_booked_owner_house(cls, agent: Agent = None, landlord: LandLord = None) -> 'QuerySet[HouseTransaction]':
-        """Retrieve house transactions for an agent or landlord who have booked a house.
+    def get_booked_owner_house(cls, agent: Agent = None, landlord: LandLord = None) -> 'QuerySet[Booking]':
+        """Retrieve house bookings for an agent or landlord who have booked a house.
 
         Args:
             agent (Agent, optional): Agent instance to filter houses. Defaults to None.
@@ -42,7 +42,7 @@ class HouseTransaction(models.Model):
             ValidationError: Both agent and landlord cannot be provided.
 
         Returns:
-            QuerySet[HouseTransaction]: Filtered queryset of house transactions.
+            QuerySet[Housebooking]: Filtered queryset of house bookings.
         """
         if agent and landlord:
             raise ValidationError("You cannot provide both an agent and a landlord, only one required.")
@@ -56,8 +56,8 @@ class HouseTransaction(models.Model):
         return cls.objects.none()
     
     @classmethod
-    def get_booked_owner_room(cls, agent: Agent = None, landlord: LandLord = None) -> 'QuerySet[HouseTransaction]':
-        """Retrieve room transactions for an agent or landlord who have booked a room.
+    def get_booked_owner_room(cls, agent: Agent = None, landlord: LandLord = None) -> 'QuerySet[Booking]':
+        """Retrieve room bookings for an agent or landlord who have booked a room.
 
         Args:
             agent (Agent, optional): Agent instance to filter rooms. Defaults to None.
@@ -67,7 +67,7 @@ class HouseTransaction(models.Model):
             ValidationError: Both agent and landlord cannot be provided.
 
         Returns:
-            QuerySet[HouseTransaction]: Filtered queryset of room transactions.
+            QuerySet[Housebooking]: Filtered queryset of room bookings.
         """
         if agent and landlord:
             raise ValidationError("You cannot provide both an agent and a landlord, only one required.")
@@ -83,12 +83,12 @@ class HouseTransaction(models.Model):
     @classmethod
     def save_booking(cls, house: House, booking_fee: Decimal, room: Room = None) -> str:
         """
-        Save a booking transaction for a tenant in a specific house and room.
+        Save a booking booking for a tenant in a specific house and room.
 
-        This method creates and saves a booking transaction, which includes details 
+        This method creates and saves a booking booking, which includes details 
         about the house, the tenant, the amount of money paid, and the specific room 
         booked (if any). If no room is specified, it defaults to `None`. After saving 
-        the transaction, it logs a success message and returns a confirmation message.
+        the booking, it logs a success message and returns a confirmation message.
 
         Args:
             house (House): The house that the tenant is booking.
@@ -98,13 +98,13 @@ class HouseTransaction(models.Model):
         Returns:
             str: A confirmation message indicating the booking was successfully received.
         """
-        transaction = cls(
+        booking = cls(
             house=house,
             room=room,
             booking_fee=booking_fee,
         )
 
-        transaction.save()
+        booking.save()
 
         logger.info(f"Booking saved successfully")
 

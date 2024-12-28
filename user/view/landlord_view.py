@@ -38,7 +38,6 @@ class LandLordRegistrationView(generics.GenericAPIView):
                 last_name=validated_data.get("last_name"), 
                 phone_number=validated_data.get("phone_number"), 
                 gender=validated_data.get("gender"), 
-                username=validated_data.get("username"), 
                 email=validated_data.get("email"), 
                 password=validated_data.get("password"), 
                 avatar=validated_data.get("avatar", None)

@@ -5,7 +5,7 @@ class IsLandLord(BasePermission):
     Custom permission to only allow access to landlords.
     """
     def has_permission(self, request, view):
-        # Check if the user is a LandLord based on username or other attributes
+        # Check if the user is a LandLord based on phone number or email or other attributes
         if request.user.is_authenticated:
             # Check for LandLord relationship or some attribute indicating they are a landlord
             return hasattr(request.user, "landlord")  # E.g., checking a field or model relationship
@@ -17,7 +17,7 @@ class IsAgent(BasePermission):
     Custom permission to only allow access to agents.
     """
     def has_permission(self, request, view):
-        # Check if the user is an Agent based on username or attributes
+        # Check if the user is an Agent based on phone number or email or attributes
         if request.user.is_authenticated:
             # Ensure the user is an instance of Agent or has the "agent" attribute
             return hasattr(request.user, "agent")  # E.g., checking a field or model relationship

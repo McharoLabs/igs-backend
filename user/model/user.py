@@ -3,6 +3,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 
 from user.enums.gender import GENDER
+from utils.phone_number import validate_phone_number
 from utils.upload_image import upload_profile_to, validate_image
 from .base_user_manager import MyUserManager
 
@@ -13,7 +14,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=30, null=False, blank=False)
     middle_name = models.CharField(max_length=30, null=True, blank=True)
     last_name = models.CharField(max_length=30, null=False, blank=False)
-    phone_number = models.CharField(max_length=15, unique=True)
+    phone_number = models.CharField(max_length=15, validators=[validate_phone_number] , unique=True, null=False, blank=False)
     gender = models.CharField(choices=gender_choice,max_length=50, null=False, blank=False)
     email = models.EmailField(max_length=100, unique=True, null=False, blank=False)
     password = models.CharField(max_length=255)
@@ -25,23 +26,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = MyUserManager()
 
-    USERNAME_FIELD = "username"
-    REQUIRED_FIELDS = ['first_name', 'last_name', 'email', 'phone_number']
+    USERNAME_FIELD = "phone_number"
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'email']
     
     class Meta:
         db_table = 'user'
-        
-    @classmethod
-    def is_username_exist(cls,username: str) -> bool:
-        """Method to check if the user with given username exists in the database
-
-        Args:
-            username (str): Username of the user
-
-        Returns:
-            bool: Return true if the user exists in the database, otherwise false
-        """
-        return cls.objects.filter(username=username).exists()
     
     @classmethod
     def is_email_exist(cls, email: str) -> bool:
@@ -66,15 +55,3 @@ class User(AbstractBaseUser, PermissionsMixin):
             bool: Returns true if the user phone number already exists in the database, otherwise false
         """
         return cls.objects.filter(phone_number=phone_number).exists()
-    
-    @classmethod
-    def get_by_username(cls, username: str) -> 'User':
-        """This method get user by username from the dtabase
-
-        Args:
-            username (str): Username of the user to find the user from the database
-
-        Returns:
-            User: User instance
-        """
-        return cls.objects.filter(username=username).first()

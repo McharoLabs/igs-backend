@@ -11,7 +11,6 @@ class RegisterUserSerializer(serializers.Serializer):
     last_name = serializers.CharField(max_length=30)
     phone_number = serializers.CharField(max_length=15)
     gender = serializers.CharField(max_length=50)
-    username = serializers.CharField(max_length=50)
     email = serializers.EmailField(max_length=100)
     password = serializers.CharField(write_only=True, max_length=255)
     avatar = serializers.ImageField(required=False, allow_null=True)

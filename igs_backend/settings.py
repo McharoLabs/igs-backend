@@ -53,14 +53,14 @@ INSTALLED_APPS = [
     "corsheaders",
     "drf_yasg",
     "rest_framework",
+    "django_crontab",
     "user",
     "location",
     "house",
     "payment",
     "authentication",
-    "api_doc",
     "account",
-    "django_crontab",
+    "booking",
 ]
 
 # AUTH_USER_MODEL = "authentication.User"
@@ -78,7 +78,7 @@ MIDDLEWARE = [
 ]
 
 CRONJOBS = [
-    ('* * * * *', 'house.cron.my_scheduled_job'),
+    ('* * * * *', 'booking.cron.my_scheduled_job'),
     ('* * * * *', 'account.cron.expire_account_job'),
     ('* * * * *', 'house.cron.activate_house_job'),
     ('* * * * *', 'house.cron.deactivate_house_job')
