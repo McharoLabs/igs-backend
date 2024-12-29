@@ -4,7 +4,6 @@ import uuid
 from django.db import models
 from django.core.exceptions import ValidationError
 from account.models import SubscriptionPlan, Account
-from booking.models import Booking
 from house.models import House, Room
 from payment.enums.payment_status import PaymentStatus
 from payment.enums.payment_type import PaymentType
@@ -24,7 +23,7 @@ class Payment(models.Model):
     plan = models.ForeignKey(SubscriptionPlan, on_delete=models.RESTRICT, related_name="plan_payment", null=True, blank=True)
     
     # Fields for account type
-    house = models.ForeignKey(LandLord, on_delete=models.RESTRICT, related_name="house_payment", null=True, blank=True)
+    house = models.ForeignKey(House, on_delete=models.RESTRICT, related_name="house_payment", null=True, blank=True)
     room = models.ForeignKey(Room, on_delete=models.RESTRICT, related_name="room_payment", null=True, blank=True)
     
     phone_number = models.CharField(max_length=15, validators=[validate_phone_number], null=False)
@@ -61,6 +60,22 @@ class Payment(models.Model):
                 raise ValueError("Activation already triggered within the same context. Preventing recursion.")
         except ValueError as e:
             raise e
+    
+    @classmethod
+    def auto_mark_room_booked(cls) -> None:
+        payments = cls.objects.filter(is_consumed=False)
+
+        if payments:
+            for payment in payments:
+                if payment.house: 
+                    if payment.house.is_full_house_rental:
+                        payment.house.mark_booked()
+                        payment.mark_as_consumed()
+                        logger.info(f"House {payment.house} marked booked")
+                    elif payment.room:
+                        payment.room.mark_booked()
+                        payment.mark_as_consumed()
+                        logger.info(f"Room {payment.room} marked booked")
         
     @classmethod
     def auto_activate_account(cls) -> None:

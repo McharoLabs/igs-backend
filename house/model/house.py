@@ -41,9 +41,10 @@ class House(models.Model):
     total_dining_room = models.IntegerField()
     total_bath_room = models.IntegerField()
     status = models.CharField(max_length=255, choices=STATUS.choices(), default=STATUS.default(), null=False, blank=False)
-    listing_date = models.DateTimeField(default=timezone.now, editable=False)
     is_active_account = models.BooleanField(default=True)
     locked = models.BooleanField(default=False)
+    is_full_house_rental = models.BooleanField(default=False, help_text="True if the house is rented as a whole, False if rented by rooms")
+    listing_date = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -52,7 +53,7 @@ class House(models.Model):
     def __str__(self) -> str:
         return self.title
     
-    def update_status_to_booked(self) -> None:
+    def mark_booked(self) -> None:
         """Update the status of the house to 'booked'."""
         self.status = STATUS.BOOKED.value
         self.save()
@@ -242,6 +243,7 @@ class House(models.Model):
         filters &= Q(status=STATUS.AVAILABLE.value)
         filters &= Q(is_active_account=True)
         filters &= Q(locked=False)
+        filters &= Q(is_full_house_rental=True)
 
         if category:
             filters &= Q(category=category)
@@ -311,6 +313,7 @@ class House(models.Model):
         total_bed_room: int,
         total_dining_room: int,
         total_bath_room: int,
+        is_full_house_rental: bool,
         agent: Agent = None,
         landlord: LandLord = None
     ) -> str:
@@ -332,6 +335,7 @@ class House(models.Model):
             total_bed_room (int): Number of bedrooms.
             total_dining_room (int): Number of dining rooms.
             total_bath_room (int): Number of bathrooms.
+            is_full_house_rental (bool): Specify if the True the house is full rental, otherwise per room.
             agent (Agent, optional): The agent managing the house. Default is None.
             landlord (LandLord, optional): The landlord of the house. Default is None.
 
@@ -376,7 +380,8 @@ class House(models.Model):
             furnishing_status=furnishing_status,
             total_bed_room=total_bed_room,
             total_dining_room=total_dining_room,
-            total_bath_room=total_bath_room
+            total_bath_room=total_bath_room,
+            is_full_house_rental=is_full_house_rental
         )
 
         house.save()

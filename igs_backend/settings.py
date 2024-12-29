@@ -30,6 +30,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('SECRET_KEY')
 SITE_URL = env('SITE_URL')
+BOOKING_FEE = env('BOOKING_FEE')
 PROPERTY_IMAGE_BASE_URL = env('PROPERTY_IMAGE_BASE_URL')
 AVATOR_IMAGE_BASE_URL = env('AVATOR_IMAGE_BASE_URL')
 
@@ -83,7 +84,8 @@ CRONJOBS = [
     ('* * * * *', 'account.cron.expire_account_job'),
     ('* * * * *', 'house.cron.activate_house_job'),
     ('* * * * *', 'house.cron.deactivate_house_job'),
-    ('* * * * *', 'payment.cron.auto_activate_account_job')
+    ('* * * * *', 'payment.cron.auto_activate_account_job'),
+    ('* * * * *', 'payment.cron.auto_mark_room_booked_job')
 ]
 
 log_directory = BASE_DIR / 'logs'

@@ -19,6 +19,9 @@ class Account(models.Model):
     start_date = models.DateTimeField(default=timezone.now)
     end_date = models.DateTimeField()
     is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        db_table = 'account'
 
     def save(self, *args, **kwargs):
         if not self.end_date and self.plan:

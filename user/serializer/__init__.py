@@ -1,4 +1,4 @@
-from .agent_serializer import *
-from .landlord_serializer import *
+from .agent_serializer import RequestAgentRegistrationSerializer, ResponseAgentRegistrationSerializer
+from .landlord_serializer import RequestLandLordRegistrationSerializer, ResponseLandLordRegistrationSerializer
 from .response_agent_serializer import ResponseAgentSerializer
 from .response_landlord_serailizer import ResponseLandLordSerializer

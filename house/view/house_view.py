@@ -96,6 +96,7 @@ class HouseViewSet(viewsets.ModelViewSet):
                     "total_bed_room": validated_data.get("total_bed_room"),
                     "total_dining_room": validated_data.get("total_dining_room"),
                     "total_bath_room": validated_data.get("total_bath_room"),
+                    "is_full_house_rental": validated_data.get("is_full_house_rental"),
                     "agent": agent,
                     "landlord": landlord
                 }

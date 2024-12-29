@@ -1,4 +1,3 @@
-# user/model/__init__.py
-from .user import *
-from .agent import *
-from .landlord import *
+from .user import User
+from .agent import Agent
+from .landlord import LandLord

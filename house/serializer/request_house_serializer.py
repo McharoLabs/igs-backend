@@ -19,6 +19,7 @@ class RequestHouseSerializer(serializers.Serializer):
     total_bed_room = serializers.IntegerField(required=True)
     total_dining_room = serializers.IntegerField(required=True)
     total_bath_room = serializers.IntegerField(required=True)
+    is_full_house_rental = serializers.BooleanField(required=True)
     district_id = serializers.UUIDField(required=True)
     ward = serializers.CharField(required=True, max_length=255)
     latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False)

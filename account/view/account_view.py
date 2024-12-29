@@ -4,7 +4,7 @@ from typing import cast
 from django.http import HttpRequest
 from rest_framework import viewsets, permissions, status
 from account.models import Account
-from account.serializers import RequestSubscriptionPlanSerializer, ResponseAccountSerializer
+from account.serializers import ResponseAccountSerializer, RequestSubscriptionSerializer
 from authentication.custom_permissions import *
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class AccountViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
-        return RequestSubscriptionPlanSerializer
+        return RequestSubscriptionSerializer
 
     def get_permissions(self):
         """

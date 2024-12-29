@@ -30,15 +30,10 @@ class Room(models.Model):
     def __str__(self) -> str:
         return f"{self.house.title} - {self.room_number}"
         
-    # def mark_rented(self) -> None:
-    #     self.status = STATUS.RENTED.value
-    #     self.save()
+    def mark_booked(self) -> None:
+        self.status = STATUS.BOOKED.value
+        self.save()
     
-    @classmethod
-    def total_uploaded_rooms(cls, house: House) -> int:
-        """Count the total rooms for a specific house."""
-        return cls.objects.filter(house=house).count()
-        
     @classmethod
     def get_room(cls, room_id: uuid.UUID) -> 'Room':
         return cls.objects.filter(room_id=room_id).first()
@@ -102,6 +97,14 @@ class Room(models.Model):
         Returns:
             str: A success message indicating that the room was added successfully.
         """
+        
+        if house.is_full_house_rental:
+            raise ValidationError(f"{house.title} is flagged as whole rental house, you can not upload room")
+        
+        total_uploaded_rooms = cls.objects.filter(house=house).count()
+        
+        if total_uploaded_rooms == house.total_bed_room:
+            raise ValueError("You have reached maximum uploads of rooms") 
                 
         if room_category and not ROOM_CATEGORY.valid(room_category=room_category):
             raise ValueError(f"Invalid room category '{room_category}'. Value options are {', '.join(choice[0] for choice in ROOM_CATEGORY.choices())}")
@@ -158,6 +161,7 @@ class Room(models.Model):
         filters &= Q(house__status=STATUS.AVAILABLE.value)
         filters &= Q(house__is_active_account=True)
         filters &= Q(house__locked=False)
+        filters &= Q(house__is_full_house_rental=False)
 
         if room_category:
             filters &= Q(room_category=room_category)

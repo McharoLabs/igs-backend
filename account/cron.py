@@ -9,8 +9,6 @@ def expire_account_job():
         accounts = Account.get_active_accounts()
         
         if accounts:
-            logger.info(f"Trying to expire account(s) for: {[account for account in accounts]}")
-            
             for account in accounts:
                 account.expire_account()
     

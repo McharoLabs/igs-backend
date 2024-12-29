@@ -1,2 +1,2 @@
-from .request_serializer import RequestBookingPaymentSerializer, RequestSubscriptionPaymentSerializer
+from .request_subscription_serializer import RequestBookingPaymentSerializer, RequestSubscriptionPaymentSerializer
 from .response_serializer import PaymentResponseSerializer

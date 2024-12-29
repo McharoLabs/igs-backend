@@ -1,5 +1,6 @@
 from decimal import Decimal
 from typing import cast
+from django.core.exceptions import ValidationError
 from django.http import HttpRequest
 from rest_framework import viewsets, permissions, status
 from authentication.custom_permissions import *
@@ -62,14 +63,10 @@ class RoomViewSet(viewsets.ModelViewSet):
         
         try:                
             house = House.get_house_by_agent_or_landlord(agent=agent, landlord=landlord, house_id=validated_data.get("house_id"))
-            total_uploaded_rooms = Room.total_uploaded_rooms(house=house)
-            
-            if total_uploaded_rooms >= house.total_bed_room:
-                return Response(data={"detail": "You have reached your maximum room uploads"}, status=status.HTTP_403_FORBIDDEN)
             
             if house is None:
-                return Response(data={"detail": "No house found corresponding."}, status=status.HTTP_404_NOT_FOUND)
-
+                return Response(data={"detail": "House not found"})
+            
             response_message = Room.add_room(
                 house=house, 
                 room_category=validated_data.get("room_category"), 
@@ -81,8 +78,11 @@ class RoomViewSet(viewsets.ModelViewSet):
             return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
         except ValueError as e:
-            logger.error(f"Validation error occurred: {e}", exc_info=True)
+            logger.error(f"Value error occurred: {e}", exc_info=True)
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except ValidationError as e:
+            logger.error(f"Validation error occurred: {e}", exc_info=True)
+            return Response({"detail": e.message}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             logger.error(f"Unexpected error occurred: {e}", exc_info=True)
             return Response({"detail": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
