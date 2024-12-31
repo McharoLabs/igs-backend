@@ -3,7 +3,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from authentication.auth import TokenAuthentication
-from authentication.serializers import SignInSerializer, AuthResponse
+from authentication.serializers import SignInSerializer, TokenResponseSerializer
 from drf_yasg.utils import swagger_auto_schema
 
 
@@ -21,7 +21,7 @@ class SignInAPIView(generics.GenericAPIView):
         tags=["Authentication"],
         request_body=SignInSerializer,
         responses={
-            200: AuthResponse(many=False),
+            200: TokenResponseSerializer(many=False),
             400: "Invalid input data"
         },
     )
@@ -30,10 +30,12 @@ class SignInAPIView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data
         token = RefreshToken.for_user(user)
-       
         data = {
+            "tokens": {
                 "refresh": str(token), 
-                "access": str(token.access_token),  
+                "access": str(token.access_token),
             }
-        response_serializer = AuthResponse(data)
+        }
+        
+        response_serializer = TokenResponseSerializer(data)
         return Response(data=response_serializer.data, status=status.HTTP_200_OK) 

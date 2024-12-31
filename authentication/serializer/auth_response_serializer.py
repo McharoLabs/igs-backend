@@ -1,5 +1,8 @@
 from rest_framework import serializers
 
-class AuthResponse(serializers.Serializer):
-    access = serializers.CharField(max_length=512)
-    refresh = serializers.CharField(max_length=512) 
+class TokenSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+    access = serializers.CharField()
+
+class TokenResponseSerializer(serializers.Serializer):
+    tokens = TokenSerializer()

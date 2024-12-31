@@ -10,7 +10,7 @@ class RequestLandLordRegistrationSerializer(serializers.Serializer):
     gender = serializers.ChoiceField(choices=[(gender.value, gender.value) for gender in GENDER], required=True)
     email = serializers.EmailField(max_length=100, required=True)
     password = serializers.CharField(max_length=255, write_only=True, min_length=6)
-    avatar = serializers.ImageField(required=False, allow_null=True)
+    avatar = serializers.ImageField(required=True, allow_null=False)
     
     @classmethod
     def validate_phone_number(cls, value):

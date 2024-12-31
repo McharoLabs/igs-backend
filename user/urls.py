@@ -1,7 +1,11 @@
-from django.urls import path
-from . import views
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import AgentViewSet, LandLordViewSet, UserViewSet
 
-urlpatterns = [
-    path('agent/register', views.AgentRegistrationView.as_view(), name='agent-registration'),
-    path('land-lord/register', views.LandLordRegistrationView.as_view(), name='land-lord-registration'),
-]
+router = DefaultRouter()
+
+router.register(r'agents', AgentViewSet, basename='agent')
+router.register(r'landlords', LandLordViewSet, basename='landlord')
+router.register(r'users', UserViewSet, basename='user')
+
+urlpatterns = router.urls
