@@ -75,8 +75,8 @@ class RegionViewSet(viewsets.ViewSet):
         region = Region.get_region_by_id(region_id=pk)
         if not region:
             return Response({"detail": "Region not found"}, status=status.HTTP_404_NOT_FOUND)
-        serializer = ResponseRegionSerializer(region)
-        return Response(serializer.data)
+        serializer = ResponseRegionSerializer(region, many=False)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         operation_description="List all regions",
@@ -90,4 +90,4 @@ class RegionViewSet(viewsets.ViewSet):
         """List all regions."""
         regions = Region.get_regions()
         serializer = ResponseRegionSerializer(regions, many=True)
-        return Response(serializer.data)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)

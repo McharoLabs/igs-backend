@@ -29,9 +29,9 @@ class Agent(User):
     def save_agent(cls, first_name: str, middle_name: str, last_name: str, phone_number: str, gender: str, email: str, password: str, avatar=None) -> None:
 
         if cls.is_email_exist(email=email):
-            raise ValidationError(f"An agent with the email '{email}' already exists.")
+            raise ValidationError(f"Email already exists.")
         if cls.is_phone_number_exist(phone_number=phone_number):
-            raise ValidationError(f"An agent with phone number '{phone_number}' already exists.")
+            raise ValidationError(f"Phone number already exists.")
         
         try:  
           agent = cls(

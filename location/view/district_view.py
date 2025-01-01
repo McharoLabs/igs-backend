@@ -1,3 +1,4 @@
+import uuid
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -8,6 +9,7 @@ from shared.seriaizers import DetailResponseSerializer
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 import logging
+from drf_yasg import openapi
 
 logger = logging.getLogger(__name__)
 
@@ -82,8 +84,47 @@ class DistrictViewSet(viewsets.ModelViewSet):
         district = District.get_district_by_id(district_id=pk)
         if not district:
             return Response({"detail": "District not found"}, status=status.HTTP_404_NOT_FOUND)
-        serializer = ResponseDistrictSerializer(district)
-        return Response(serializer.data)
+        serializer = ResponseDistrictSerializer(district, many=False)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+    
+    @swagger_auto_schema(
+        operation_description="Retrieve districts by region ID",
+        operation_summary="Retrieve districts by region ID",
+        method="get",
+        tags=["District"],
+        responses={
+            200: ResponseDistrictSerializer(many=True),
+            400: "Region is required",
+            404: "Region not found"
+        },
+        manual_parameters=[
+            openapi.Parameter(
+                'region_id',
+                openapi.IN_PATH,
+                description="The UUID of the region to retrieve districts for",
+                type=openapi.TYPE_STRING,
+                required=True
+            )
+        ]
+    )
+    @action(detail=False, methods=['get'], url_path='(?P<region_id>[^/]+)/retrieve_region_districts')
+    def retrieve_region_districts(self, request, region_id: uuid.UUID):
+        """Retrieve districts for a specific region by region ID."""
+        try:
+            region = Region.get_region_by_id(region_id=region_id)
+
+            if not region:
+                return Response({"detail": "Region not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            districts = District.get_districts_by_region(region=region)
+
+            serializer = ResponseDistrictSerializer(districts, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            # Handle any errors during the request
+            return Response({"detail": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
     @swagger_auto_schema(
         operation_description="List all districts",
@@ -97,4 +138,6 @@ class DistrictViewSet(viewsets.ModelViewSet):
         """List all districts."""
         districts = District.get_all_districts()
         serializer = ResponseDistrictSerializer(districts, many=True)
-        return Response(serializer.data)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+    
+# 612939fb-10d2-4cb8-86a8-449ec2b688ae

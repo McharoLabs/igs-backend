@@ -1,7 +1,7 @@
 import mimetypes
 import os
 from typing import cast
-from django.http import FileResponse, Http404, HttpRequest, HttpResponse
+from django.http import  HttpRequest, HttpResponse
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from authentication.custom_permissions import *
@@ -11,13 +11,14 @@ from igs_backend import settings
 import logging
 
 from user.models import User
+from user.serializers import RequestAvatarSerializer
 
 
 logger = logging.getLogger(__name__)
 
 class UserViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
-        return None
+        return RequestAvatarSerializer
 
     def get_permissions(self):
         """
@@ -46,8 +47,6 @@ class UserViewSet(viewsets.ModelViewSet):
             user = cast(User, request.user)
 
             file_path = os.path.join(settings.MEDIA_ROOT, user.avatar.name)
-
-            print(f"File path: {file_path}")
 
             if not os.path.exists(file_path):
                 return Response({"detail": "Image not found"}, status=status.HTTP_404_NOT_FOUND)

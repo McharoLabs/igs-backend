@@ -3,7 +3,6 @@ from django.db import models
 from django.db.models.query import QuerySet
 from .region import Region
 import logging
-from django.db import IntegrityError
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +31,7 @@ class District(models.Model):
     
     @classmethod
     def get_district_by_id(cls, district_id: uuid.UUID) -> 'District':
-        """This method gets the district from the database bu district id
+        """This method gets the district from the database by district id
 
         Args:
             district_id (uuid.UUID): District id to find the district from the database
@@ -41,6 +40,18 @@ class District(models.Model):
             District: District instance from the database if found, otherwise None
         """
         return cls.objects.filter(district_id=district_id).first()
+    
+    @classmethod
+    def get_districts_by_region(cls, region: Region) -> 'QuerySet[District]':
+        """This method gets the all districts from the database by region id
+
+        Args:
+            region (Region): Region to find the districts from the database
+
+        Returns:
+            District: Queryset of District instance from the database if found, otherwise None
+        """
+        return cls.objects.filter(region=region)
 
     @classmethod
     def get_district_by_name(cls, district_name: str) -> 'District':
