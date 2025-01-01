@@ -10,8 +10,8 @@ class Location(models.Model):
     region = models.CharField(max_length=255)
     district = models.CharField(max_length=255)
     ward = models.CharField(max_length=255)
-    latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    latitude = models.DecimalField(max_digits=11, decimal_places=8)
+    longitude = models.DecimalField(max_digits=11, decimal_places=8)
 
     class Meta:
         db_table = 'location'

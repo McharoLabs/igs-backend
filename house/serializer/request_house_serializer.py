@@ -22,5 +22,5 @@ class RequestHouseSerializer(serializers.Serializer):
     is_full_house_rental = serializers.BooleanField(required=True)
     district_id = serializers.UUIDField(required=True)
     ward = serializers.CharField(required=True, max_length=255)
-    latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False)
-    longitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False)
+    latitude = serializers.DecimalField(max_digits=11, decimal_places=8, required=False)
+    longitude = serializers.DecimalField(max_digits=11, decimal_places=8, required=False)
