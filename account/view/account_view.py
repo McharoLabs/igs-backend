@@ -43,7 +43,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         method="get",
         tags=["Account"],
         responses={
-            200: ResponseAccountSerializer(many=True),
+            200: ResponseAccountSerializer(many=False),
             400: "Invalid input data"
         },
     )

@@ -99,7 +99,7 @@ class SubscriptionPlanViewSet(viewsets.ModelViewSet):
                 plan=plan
             )
             
-            return Response(data={"detail": "You have initiated payment, please finish your payment to activate account"}, status=status.HTTP_200_OK)
+            return Response(data={"detail": f"Successfully subscribed to {plan.name}, please finish your payment to activate account"}, status=status.HTTP_200_OK)
         except ValueError as e:
             logger.error(f"Value error occurred: {e}", exc_info=True)
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
