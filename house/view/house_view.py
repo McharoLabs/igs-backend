@@ -138,8 +138,30 @@ class HouseViewSet(viewsets.ModelViewSet):
         method="get",
         tags=["House"],
         responses={
-            200: ResponseHouseSerializer(many=True), 
-            401: DetailResponseSerializer(many=False)
+            200: openapi.Response(
+                description="A paginated list of houses",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'count': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'next': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
+                        'previous': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
+                        'results': openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(
+                                type=openapi.TYPE_OBJECT,
+                                properties={
+                                    **{field: openapi.Schema(type=openapi.TYPE_STRING) for field in ResponseHouseSerializer().get_fields().keys()}
+                                }
+                            )
+                        ),
+                    }
+                ),
+            ),
+            401: openapi.Response(
+                description="Unauthorized",
+                schema=DetailResponseSerializer(many=False)
+            ),
         },
         manual_parameters=[
             openapi.Parameter(
@@ -147,26 +169,48 @@ class HouseViewSet(viewsets.ModelViewSet):
                 openapi.IN_QUERY,
                 description="House id for getting specific house for the agent or landlord",
                 type=openapi.TYPE_STRING,
-            )
+            ),
+            openapi.Parameter(
+                'page',
+                openapi.IN_QUERY,
+                description="Page number for paginated results",
+                type=openapi.TYPE_INTEGER,
+            ),
+            openapi.Parameter(
+                'page_size',
+                openapi.IN_QUERY,
+                description="Number of results per page",
+                type=openapi.TYPE_INTEGER,
+            ),
         ]
     )
     @action(detail=False, methods=['get'])
     def list_houses(self, request: HttpRequest):
         user = cast(User, request.user)
         house_id = request.GET.get('house_id')
+        
         try:
-            houses: House = None
+            houses = None
             if hasattr(user, 'landlord'):
                 houses = House.get_all_houses(landlord=user, house_id=house_id)
             elif hasattr(user, 'agent'):
                 houses = House.get_all_houses(agent=user, house_id=house_id)
             else:
                 houses = House.get_all_houses()
-                
+
+            paginator = PageNumberPagination()
+            page = paginator.paginate_queryset(houses, request)
+
+            if page is not None:
+                serializer = ResponseHouseSerializer(page, many=True)
+                return paginator.get_paginated_response(serializer.data)
+
             serializer = ResponseHouseSerializer(houses, many=True)
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+            
         except PermissionDenied as e:
             return Response(data={"detail": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+
     
     @swagger_auto_schema(
         operation_description="List filtered houses",
