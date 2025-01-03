@@ -39,6 +39,7 @@ class Payment(models.Model):
         """Mark the payment as consumed and store the timestamp."""
         self.is_consumed = True
         self.consumed_at = timezone.now()
+        self.status = PaymentStatus.COMPLETED
         self.save()
 
     class Meta:
