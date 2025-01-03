@@ -151,10 +151,46 @@ class HouseViewSet(viewsets.ModelViewSet):
                             items=openapi.Schema(
                                 type=openapi.TYPE_OBJECT,
                                 properties={
-                                    **{field: openapi.Schema(type=openapi.TYPE_STRING) for field in ResponseHouseSerializer().get_fields().keys()}
+                                    'house_id': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'location': openapi.Schema(
+                                        type=openapi.TYPE_OBJECT,
+                                        properties={
+                                            'location_id': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'region': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'district': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'ward': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'latitude': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'longitude': openapi.Schema(type=openapi.TYPE_STRING),
+                                        }
+                                    ),
+                                    'images': openapi.Schema(
+                                        type=openapi.TYPE_ARRAY,
+                                        items=openapi.Schema(type=openapi.TYPE_STRING),
+                                    ),
+                                    'category': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'price': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'title': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'description': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'condition': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'nearby_facilities': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'utilities': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'security_features': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'heating_cooling_system': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'furnishing_status': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'total_bed_room': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                    'total_dining_room': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                    'total_bath_room': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                    'status': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'is_active_account': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                    'locked': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                    'is_full_house_rental': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                    'listing_date': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'updated_at': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'agent': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'landlord': openapi.Schema(type=openapi.TYPE_STRING, nullable=True)
                                 }
                             )
-                        ),
+                        )
                     }
                 ),
             ),

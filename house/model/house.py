@@ -243,10 +243,13 @@ class House(models.Model):
         filters &= Q(status=STATUS.AVAILABLE.value)
         filters &= Q(is_active_account=True)
         filters &= Q(locked=False)
-        filters &= Q(is_full_house_rental=True)
 
         if category:
             filters &= Q(category=category)
+            if category == CATEGORY.RENTAL.value:
+                filters &= Q(is_full_house_rental=True) 
+            elif category == CATEGORY.SALE.value:
+                filters &= Q(is_full_house_rental=False)
         
         if region:
             filters &= Q(location__region__iexact=region)
