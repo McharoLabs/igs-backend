@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from house.models import House
+from igs_backend import settings
 from location.serializers import ResponseLocationSerializer
-from django.conf import settings
 
 
 class ResponseHouseSerializer(serializers.ModelSerializer):
