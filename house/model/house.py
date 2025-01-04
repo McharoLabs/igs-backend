@@ -15,7 +15,7 @@ from user.models import Agent
 from user.models import LandLord
 import logging
 from django.db.models.query import QuerySet
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.utils import timezone
 from django.core.exceptions import PermissionDenied
 from django.core.exceptions import ValidationError
@@ -150,38 +150,6 @@ class House(models.Model):
         if landlord:
             return cls.objects.filter(status=STATUS.BOOKED.value, landlord=landlord)
     
-    # def is_owned_by_agent_or_landlord(self, agent=None, landlord=None) -> bool:
-    #     """Check if the house is owned by the provided agent or landlord.
-
-    #     Args:
-    #         agent (Agent, optional): The agent to check ownership against. Defaults to None.
-    #         landlord (LandLord, optional): The landlord to check ownership against. Defaults to None.
-
-    #     Returns:
-    #         bool: True if either the agent or the landlord owns the house, False otherwise.
-    #     """
-    #     if agent and self.agent == agent:
-    #         return True
-    #     if landlord and self.landlord == landlord:
-    #         return True
-    #     return False
-    
-    
-
-    # @staticmethod
-    # def is_house_exists(house_id: uuid.UUID) -> bool:
-    #     """Check if a house with the given ID exists in the database.
-
-    #     This method checks if a house with the provided house_id exists in the database.
-
-    #     Args:
-    #         house_id (uuid.UUID): The unique identifier of the house to check.
-
-    #     Returns:
-    #         bool: True if the house exists, False otherwise.
-    #     """
-    #     return House.objects.filter(house_id=house_id).exists()
-    
     @classmethod
     def get_house_by_agent_or_landlord(cls, agent=None, landlord=None, house_id=None) -> 'House':
         """Get a house by agent or landlord and house ID (UUID).
@@ -208,23 +176,6 @@ class House(models.Model):
             filters &= Q(landlord=landlord)
         
         return cls.objects.filter(filters).first()
-    
-    # @classmethod
-    # def get_houses_for_agent_or_landlord(cls, agent=None, landlord=None) -> 'QuerySet[House]':
-    #     """Retrieve all houses for the given agent or landlord.
-
-    #     Args:
-    #         agent (Agent, optional): The agent to get houses for. Defaults to None.
-    #         landlord (LandLord, optional): The landlord to get houses for. Defaults to None.
-
-    #     Returns:
-    #         QuerySet: A queryset of houses associated with the provided agent or landlord.
-    #     """
-    #     if agent:
-    #         return cls.objects.filter(agent=agent)
-    #     if landlord:
-    #         return cls.objects.filter(landlord=landlord)
-    #     return cls.objects.none()
     
     @classmethod
     def filter_houses(
@@ -276,28 +227,93 @@ class House(models.Model):
         return cls.objects.filter(house_id=house_id, status=STATUS.AVAILABLE.value).first()
     
     @classmethod
-    def get_all_houses(cls, agent: Agent = None, landlord: LandLord = None, house_id: uuid.UUID = None) -> 'QuerySet[House]':
+    def get_all_houses(cls, agent: Agent = None, landlord: LandLord = None) -> 'QuerySet[House]':
         """
-        This method gets all the houses, optionally filtered by agent or landlord.
+        This method gets all houses with images uploaded, optionally filtered by agent or landlord,
+        ensuring that duplicate houses (due to multiple images) are not returned.
 
         Returns:
-            QuerySet[House]: A list of house instances
+            QuerySet[House]: A list of unique house instances that meet the criteria.
 
         Raises:
             PermissionDenied: If neither agent nor landlord is provided.
         """
         filters = Q()
-        
-        if house_id:
-            filters &= Q(house_id=house_id)
+
         if agent:
             filters &= Q(agent=agent)
-            return cls.objects.filter(filters)
         elif landlord:
             filters &= Q(landlord=landlord)
-            return cls.objects.filter(filters)
         else:
             raise PermissionDenied("You are not authorized to access the houses without specifying an agent or landlord.")
+
+        houses_with_images = cls.objects.filter(filters).annotate(image_count=Count('house_image')).filter(image_count__gt=0)
+
+        return houses_with_images
+        
+    @classmethod
+    def get_houses_with_no_rooms(cls, agent: Agent = None, landlord: LandLord = None) -> 'QuerySet[House]':
+        """
+        Returns houses that are not full house rentals (is_full_house_rental=False)
+        and have no rooms uploaded, optionally filtered by agent or landlord.
+        
+        Args:
+            agent (Agent, optional): The agent requesting the houses. Defaults to None.
+            landlord (LandLord, optional): The landlord requesting the houses. Defaults to None.
+        
+        Raises:
+            PermissionDenied: If neither agent nor landlord is specified.
+        
+        Returns:
+            QuerySet[House]: List of houses matching the criteria.
+        """
+        
+        if not (agent or landlord):
+            raise PermissionDenied("You are not authorized to access the houses without specifying an agent or landlord.")
+        if agent and landlord:
+            raise ValueError("Resource can be accessed only by agent or landlord.")
+        
+        if agent is None and landlord is None:
+            raise PermissionDenied("You are not authorized to access the houses without specifying an agent or landlord.")
+        
+        filters = Q(is_full_house_rental=False)
+    
+        if agent:
+            filters &= Q(agent=agent)
+        elif landlord:
+            filters &= Q(landlord=landlord)
+        
+        return cls.objects.filter(filters).annotate(rooms_count=Count('rooms')).filter(rooms_count=0)
+    
+    @classmethod
+    def get_houses_with_no_images(cls, agent: Agent = None, landlord: LandLord = None) -> 'QuerySet[House]':
+        """
+        Returns houses that do not have any images uploaded, optionally filtered by agent or landlord.
+
+        Args:
+            agent (Agent, optional): The agent requesting the houses. Defaults to None.
+            landlord (LandLord, optional): The landlord requesting the houses. Defaults to None.
+
+        Raises:
+            PermissionDenied: If neither agent nor landlord is specified.
+
+        Returns:
+            QuerySet[House]: List of houses matching the criteria.
+        """
+        
+        filters = Q() 
+
+        if not (agent or landlord):
+            raise PermissionDenied("You are not authorized to access the houses without specifying an agent or landlord.")
+        if agent and landlord:
+            raise ValueError("Resource can be accessed only by agent or landlord.")
+        
+        if agent:
+            filters &= Q(agent=agent)
+        elif landlord:
+            filters &= Q(landlord=landlord)
+        
+        return cls.objects.filter(filters).annotate(image_count = Count('house_image')).filter(image_count=0)
 
     @classmethod
     def add_house(
