@@ -50,21 +50,37 @@ class PropertyImageViewSet(viewsets.ModelViewSet):
         request_body=RequestPropertyImageSerializer,
         responses={
             200: DetailResponseSerializer(many=False), 
-            400: "Invalid input data"},
+            401: openapi.Response(
+                description="Unauthorized",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            400: openapi.Response(
+                description="Bad request",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            500: openapi.Response(
+                description="Internal server error",
+                schema=DetailResponseSerializer(many=False)
+            )
+        },
     )
     @action(detail=False, methods=['post'])
     def upload_images(self, request: HttpRequest):
+        print(request.data)
         user = cast(User, request.user)
         request_serializer = RequestPropertyImageSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
         validated_data = request_serializer.validated_data
         
-        landlord = LandLord.get_landlord_by_phone_number(phone_number=user.phone_number)
-        agent = Agent.get_agent_by_phone_number(phone_number=user.phone_number)
-
-        if landlord is None and agent is None:
+        landlord: LandLord = None
+        agent: Agent = None
+        
+        if hasattr(user, 'agent'):
+            agent = cast(Agent, user)
+        elif hasattr(user, 'landlord'):
+            landlord = cast(LandLord, user)
+        else:
             return Response(data={"detail": "You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)
-
         
         try:                
             house = House.get_house_by_agent_or_landlord(agent=agent, landlord=landlord, house_id=validated_data.get("house_id"))
@@ -74,7 +90,7 @@ class PropertyImageViewSet(viewsets.ModelViewSet):
             
             PropertyImage.save_images(house=house, images=validated_data.get("images"))
             
-            return Response(data={"detail": "success"}, status=status.HTTP_200_OK)
+            return Response(data={"detail": f"You have successful uploded images for {house.title}"}, status=status.HTTP_200_OK)
         except ValueError as e:
             logger.error(f"Validation error occurred: {e}", exc_info=True)
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)

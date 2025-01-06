@@ -19,6 +19,7 @@ from django.db.models import Q, Count
 from django.utils import timezone
 from django.core.exceptions import PermissionDenied
 from django.core.exceptions import ValidationError
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -286,9 +287,15 @@ class House(models.Model):
         return cls.objects.filter(filters).annotate(rooms_count=Count('rooms')).filter(rooms_count=0)
     
     @classmethod
-    def get_houses_with_no_images(cls, agent: Agent = None, landlord: LandLord = None) -> 'QuerySet[House]':
+    def get_houses_with_no_rooms_or_images(
+        cls, agent: Optional[Agent] = None, landlord: Optional[LandLord] = None
+    ) -> 'QuerySet[House]':
         """
-        Returns houses that do not have any images uploaded, optionally filtered by agent or landlord.
+        Returns houses that either:
+        - do not have any rooms uploaded (rooms_count=0)
+        - do not have any images uploaded (image_count=0)
+        
+        Optionally filters the results by agent or landlord.
 
         Args:
             agent (Agent, optional): The agent requesting the houses. Defaults to None.
@@ -296,24 +303,28 @@ class House(models.Model):
 
         Raises:
             PermissionDenied: If neither agent nor landlord is specified.
+            ValueError: If both agent and landlord are specified.
 
         Returns:
             QuerySet[House]: List of houses matching the criteria.
         """
         
-        filters = Q() 
-
         if not (agent or landlord):
             raise PermissionDenied("You are not authorized to access the houses without specifying an agent or landlord.")
         if agent and landlord:
             raise ValueError("Resource can be accessed only by agent or landlord.")
         
+        filters = Q() 
+
         if agent:
             filters &= Q(agent=agent)
         elif landlord:
             filters &= Q(landlord=landlord)
-        
-        return cls.objects.filter(filters).annotate(image_count = Count('house_image')).filter(image_count=0)
+
+        return cls.objects.filter(filters).annotate(
+            rooms_count=Count('rooms'),
+            image_count=Count('house_image')
+        ).filter(Q(rooms_count=0) | Q(image_count=0))
 
     @classmethod
     def add_house(

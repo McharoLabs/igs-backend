@@ -120,17 +120,43 @@ class HouseViewSet(viewsets.ModelViewSet):
         tags=["House"],
         responses={
             200: ResponseHouseDetailSerializer(many=False), 
-            404: DetailResponseSerializer(many=False)
+            404: openapi.Response(
+                description="Not found",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            401: openapi.Response(
+                description="Unauthorized",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            500: openapi.Response(
+                description="Internal serevr error",
+                schema=DetailResponseSerializer(many=False)
+            ),
         },
     )
     @action(detail=True, methods=['get'])
     def retrieve_house(self, request: HttpRequest, pk: uuid.UUID=None):
         """Retrieve a specific house by ID."""
-        house = House.get_house_by_id(house_id=pk)
-        if not house:
-            return Response({"detail": "House not found"}, status=status.HTTP_404_NOT_FOUND)
-        serializer = ResponseHouseDetailSerializer(house)
-        return Response(serializer.data)
+        try:
+            user = cast(User, request.user)
+            agent: Agent = None
+            landlord: LandLord = None
+
+            if hasattr(user, 'landlord'):
+                landlord = cast(LandLord, user)
+            elif hasattr(user, 'agent'):
+                agent = cast(Agent, user)
+            else:
+                return Response(data={"detail": "you are not authorized to view this resource"}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            house = House.get_house_by_agent_or_landlord(agent=agent, landlord=landlord, house_id=pk)
+            if not house:
+                return Response({"detail": "House not found"}, status=status.HTTP_404_NOT_FOUND)
+            serializer = ResponseHouseDetailSerializer(house, many=False)
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+          logger.error(f"Un expected error occured while getting house with id {pk}", exc_info=True)
+          return Response(data={"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @swagger_auto_schema(
         operation_description="List all houses",
@@ -241,8 +267,8 @@ class HouseViewSet(viewsets.ModelViewSet):
             return Response(data={"detail": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
         
     @swagger_auto_schema(
-        operation_description="List all houses which do not have images uploaded",
-        operation_summary="Houses list which do not have image uploaded",
+        operation_description="List all houses which do not have images uploaded or rooms",
+        operation_summary="Houses list which do not have image uploaded or rooms",
         method="get",
         tags=["House"],
         responses={
@@ -323,126 +349,17 @@ class HouseViewSet(viewsets.ModelViewSet):
         ]
     )
     @action(detail=False, methods=['get'])
-    def houses_with_no_images(self, request: HttpRequest):
+    def houses_missing_details(self, request: HttpRequest):
         user = cast(User, request.user)
         
         try:
             houses = None
             if hasattr(user, 'landlord'):
-                houses = House.get_houses_with_no_images(landlord=user)
+                houses = House.get_houses_with_no_rooms_or_images(landlord=user)
             elif hasattr(user, 'agent'):
-                houses = House.get_houses_with_no_images(agent=user)
+                houses = House.get_houses_with_no_rooms_or_images(agent=user)
             else:
-                houses = House.get_houses_with_no_images()
-
-            paginator = PageNumberPagination()
-            page = paginator.paginate_queryset(houses, request)
-
-            if page is not None:
-                serializer = ResponseHouseSerializer(page, many=True)
-                return paginator.get_paginated_response(serializer.data)
-
-            serializer = ResponseHouseSerializer(houses, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-            
-        except PermissionDenied as e:
-            return Response(data={"detail": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-        
-    
-    @swagger_auto_schema(
-        operation_description="List all room rental houses which do not have rooms uploaded for it",
-        operation_summary="List Houses which do not have rooms uploaded",
-        method="get",
-        tags=["House"],
-        responses={
-            200: openapi.Response(
-                description="A paginated list of houses",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'count': openapi.Schema(type=openapi.TYPE_INTEGER),
-                        'next': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
-                        'previous': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
-                        'results': openapi.Schema(
-                            type=openapi.TYPE_ARRAY,
-                            items=openapi.Schema(
-                                type=openapi.TYPE_OBJECT,
-                                properties={
-                                    'house_id': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'location': openapi.Schema(
-                                        type=openapi.TYPE_OBJECT,
-                                        properties={
-                                            'location_id': openapi.Schema(type=openapi.TYPE_STRING),
-                                            'region': openapi.Schema(type=openapi.TYPE_STRING),
-                                            'district': openapi.Schema(type=openapi.TYPE_STRING),
-                                            'ward': openapi.Schema(type=openapi.TYPE_STRING),
-                                            'latitude': openapi.Schema(type=openapi.TYPE_STRING),
-                                            'longitude': openapi.Schema(type=openapi.TYPE_STRING),
-                                        }
-                                    ),
-                                    'images': openapi.Schema(
-                                        type=openapi.TYPE_ARRAY,
-                                        items=openapi.Schema(type=openapi.TYPE_STRING),
-                                    ),
-                                    'category': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'price': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'title': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'description': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'condition': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'nearby_facilities': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'utilities': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'security_features': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'heating_cooling_system': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'furnishing_status': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'total_bed_room': openapi.Schema(type=openapi.TYPE_INTEGER),
-                                    'total_dining_room': openapi.Schema(type=openapi.TYPE_INTEGER),
-                                    'total_bath_room': openapi.Schema(type=openapi.TYPE_INTEGER),
-                                    'status': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'is_active_account': openapi.Schema(type=openapi.TYPE_BOOLEAN),
-                                    'locked': openapi.Schema(type=openapi.TYPE_BOOLEAN),
-                                    'is_full_house_rental': openapi.Schema(type=openapi.TYPE_BOOLEAN),
-                                    'listing_date': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'updated_at': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'agent': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'landlord': openapi.Schema(type=openapi.TYPE_STRING, nullable=True)
-                                }
-                            )
-                        )
-                    }
-                ),
-            ),
-            401: openapi.Response(
-                description="Unauthorized",
-                schema=DetailResponseSerializer(many=False)
-            ),
-        },
-        manual_parameters=[
-            openapi.Parameter(
-                'page',
-                openapi.IN_QUERY,
-                description="Page number for paginated results",
-                type=openapi.TYPE_INTEGER,
-            ),
-            openapi.Parameter(
-                'page_size',
-                openapi.IN_QUERY,
-                description="Number of results per page",
-                type=openapi.TYPE_INTEGER,
-            ),
-        ]
-    )
-    @action(detail=False, methods=['get'])
-    def houses_with_no_rooms(self, request: HttpRequest):
-        user = cast(User, request.user)
-        
-        try:
-            houses = None
-            if hasattr(user, 'landlord'):
-                houses = House.get_houses_with_no_rooms(landlord=user)
-            elif hasattr(user, 'agent'):
-                houses = House.get_houses_with_no_rooms(agent=user)
-            else:
-                houses = House.get_houses_with_no_rooms()
+                houses = House.get_houses_with_no_rooms_or_images()
 
             paginator = PageNumberPagination()
             page = paginator.paginate_queryset(houses, request)
