@@ -4,6 +4,7 @@ import uuid
 from django.db import models
 
 from house.enums.room_category import ROOM_CATEGORY
+from house.enums.category import CATEGORY
 from house.enums.availability_status import STATUS
 from django.db.models import QuerySet
 
@@ -156,12 +157,14 @@ class Room(models.Model):
         if room_category and not ROOM_CATEGORY.valid(room_category=room_category):
             raise ValueError(f"Invalid room category '{room_category}'. Value options are {', '.join(choice[0] for choice in ROOM_CATEGORY.choices())}")
 
-        filters = Q()
-        filters &= Q(status=STATUS.AVAILABLE.value)
-        filters &= Q(house__status=STATUS.AVAILABLE.value)
-        filters &= Q(house__is_active_account=True)
-        filters &= Q(house__locked=False)
-        filters &= Q(house__is_full_house_rental=False)
+        filters = Q(
+            status=STATUS.AVAILABLE.value, 
+            house__status=STATUS.AVAILABLE.value,
+            house__is_active_account=True,
+            house__locked=False,
+            house__is_full_house_rental=False,
+            house__category=CATEGORY.RENTAL.value
+        )
 
         if room_category:
             filters &= Q(room_category=room_category)

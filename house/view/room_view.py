@@ -93,7 +93,82 @@ class RoomViewSet(viewsets.ModelViewSet):
         operation_summary="Filtered Rooms",
         method="get",
         tags=["Room"],
-        responses={200: ResponseRoomDetailSerializer(many=True)},
+        responses={
+            200: openapi.Response(
+                description="A paginated list of filtered rooms",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'count': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'next': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
+                        'previous': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
+                        'results': openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(
+                                type=openapi.TYPE_OBJECT,
+                                properties={
+                                    'room_id': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'house': openapi.Schema(
+                                        type=openapi.TYPE_OBJECT,
+                                        properties={
+                                            'house_id': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'location': openapi.Schema(
+                                                type=openapi.TYPE_OBJECT,
+                                                properties={
+                                                    'location_id': openapi.Schema(type=openapi.TYPE_STRING),
+                                                    'region': openapi.Schema(type=openapi.TYPE_STRING),
+                                                    'district': openapi.Schema(type=openapi.TYPE_STRING),
+                                                    'ward': openapi.Schema(type=openapi.TYPE_STRING),
+                                                    'latitude': openapi.Schema(type=openapi.TYPE_STRING),
+                                                    'longitude': openapi.Schema(type=openapi.TYPE_STRING),
+                                                }
+                                            ),
+                                            'images': openapi.Schema(
+                                                type=openapi.TYPE_ARRAY,
+                                                items=openapi.Schema(type=openapi.TYPE_STRING),
+                                            ),
+                                            'category': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'price': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'title': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'description': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'condition': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'nearby_facilities': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'utilities': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'security_features': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'heating_cooling_system': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'furnishing_status': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'total_bed_room': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                            'total_dining_room': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                            'total_bath_room': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                            'status': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'is_active_account': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                            'locked': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                            'is_full_house_rental': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                            'listing_date': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'updated_at': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'agent': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'landlord': openapi.Schema(type=openapi.TYPE_STRING, nullable=True)
+                                        }
+                                    ),
+                                    'room_category': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'room_number': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'price': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'status': openapi.Schema(type=openapi.TYPE_STRING)
+                                }
+                            )
+                        )
+                    }
+                )
+            ),
+            400: openapi.Response(
+                description="Bad request",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            500: openapi.Response(
+                description="Internal server error",
+                schema=DetailResponseSerializer(many=False)
+            ),
+        },
         manual_parameters=[
             openapi.Parameter(
                 'region', openapi.IN_QUERY, description="Region of the house location", type=openapi.TYPE_STRING

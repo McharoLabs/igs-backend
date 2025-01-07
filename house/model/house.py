@@ -231,7 +231,14 @@ class House(models.Model):
     def get_all_houses(cls, agent: Agent = None, landlord: LandLord = None) -> 'QuerySet[House]':
         """
         This method gets all houses with images uploaded, optionally filtered by agent or landlord,
-        ensuring that duplicate houses (due to multiple images) are not returned.
+        ensuring that:
+        - Houses with rooms and images are included.
+        - Whole rental houses (`is_full_house_rental=True`) are included only if they have images.
+        - Houses without images are excluded.
+
+        Args:
+            agent (Agent, optional): The agent requesting the houses. Defaults to None.
+            landlord (LandLord, optional): The landlord requesting the houses. Defaults to None.
 
         Returns:
             QuerySet[House]: A list of unique house instances that meet the criteria.
@@ -239,53 +246,33 @@ class House(models.Model):
         Raises:
             PermissionDenied: If neither agent nor landlord is provided.
         """
-        filters = Q()
-
-        if agent:
-            filters &= Q(agent=agent)
-        elif landlord:
-            filters &= Q(landlord=landlord)
-        else:
-            raise PermissionDenied("You are not authorized to access the houses without specifying an agent or landlord.")
-
-        houses_with_images = cls.objects.filter(filters).annotate(image_count=Count('house_image')).filter(image_count__gt=0)
-
-        return houses_with_images
-        
-    @classmethod
-    def get_houses_with_no_rooms(cls, agent: Agent = None, landlord: LandLord = None) -> 'QuerySet[House]':
-        """
-        Returns houses that are not full house rentals (is_full_house_rental=False)
-        and have no rooms uploaded, optionally filtered by agent or landlord.
-        
-        Args:
-            agent (Agent, optional): The agent requesting the houses. Defaults to None.
-            landlord (LandLord, optional): The landlord requesting the houses. Defaults to None.
-        
-        Raises:
-            PermissionDenied: If neither agent nor landlord is specified.
-        
-        Returns:
-            QuerySet[House]: List of houses matching the criteria.
-        """
-        
+        # Ensure at least one of agent or landlord is provided
         if not (agent or landlord):
             raise PermissionDenied("You are not authorized to access the houses without specifying an agent or landlord.")
-        if agent and landlord:
-            raise ValueError("Resource can be accessed only by agent or landlord.")
         
-        if agent is None and landlord is None:
-            raise PermissionDenied("You are not authorized to access the houses without specifying an agent or landlord.")
-        
-        filters = Q(is_full_house_rental=False)
-    
+        # Apply agent or landlord filters
+        filters = Q()
         if agent:
             filters &= Q(agent=agent)
-        elif landlord:
+        if landlord:
             filters &= Q(landlord=landlord)
         
-        return cls.objects.filter(filters).annotate(rooms_count=Count('rooms')).filter(rooms_count=0)
-    
+        # Annotate houses with image and room counts
+        queryset = cls.objects.filter(filters).annotate(
+            image_count=Count('house_image', distinct=True),
+            room_count=Count('rooms', distinct=True)
+        )
+
+        # Apply filters:
+        # - Houses with images (`image_count > 0`)
+        # - AND either:
+        #   - They have rooms (`room_count > 0`)
+        #   - OR they are whole rentals (`is_full_house_rental=True`)
+        return queryset.filter(
+            Q(image_count__gt=0) &
+            (Q(room_count__gt=0) | Q(is_full_house_rental=True))
+        )
+
     @classmethod
     def get_houses_with_no_rooms_or_images(
         cls, agent: Optional[Agent] = None, landlord: Optional[LandLord] = None
@@ -324,7 +311,21 @@ class House(models.Model):
         return cls.objects.filter(filters).annotate(
             rooms_count=Count('rooms'),
             image_count=Count('house_image')
-        ).filter(Q(rooms_count=0) | Q(image_count=0))
+        ).filter(
+            Q(image_count=0) |
+            (Q(rooms_count=0) & ~Q(category=CATEGORY.RENTAL.value, is_full_house_rental=True))
+        )
+        
+        # queryset = cls.objects.filter(filters).annotate(
+        #     rooms_count=Count('rooms', distinct=True),
+        #     image_count=Count('house_image', distinct=True)
+        # )
+        
+        # return queryset.filter(
+        #     Q(image_count=0) | 
+        #     (Q(rooms_count=0) & 
+        #     ~Q(category='Rental', is_full_house_rental=True))  
+        # )
 
     @classmethod
     def add_house(
