@@ -33,13 +33,14 @@ SITE_URL = env('SITE_URL')
 BOOKING_FEE = env('BOOKING_FEE')
 PROPERTY_IMAGE_BASE_URL = env('PROPERTY_IMAGE_BASE_URL')
 AVATOR_IMAGE_BASE_URL = env('AVATOR_IMAGE_BASE_URL')
+SITE_IP = env('SITE_IP')
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '192.168.10.208']
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', SITE_IP]
+# ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -56,6 +57,7 @@ INSTALLED_APPS = [
     "drf_yasg",
     "rest_framework",
     "django_crontab",
+    "sslserver",
     "user",
     "location",
     "house",
