@@ -1,3 +1,4 @@
+from typing import cast
 from rest_framework import authentication, generics, permissions, status
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.response import Response
@@ -5,6 +6,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from authentication.auth import TokenAuthentication
 from authentication.serializers import SignInSerializer, TokenResponseSerializer
 from drf_yasg.utils import swagger_auto_schema
+
+from user.models import User
 
 
 class SignInAPIView(generics.GenericAPIView):
@@ -28,8 +31,16 @@ class SignInAPIView(generics.GenericAPIView):
     def post(self,request):
         serializer = SignInSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data
+        validated_data = serializer.validated_data
+        user = cast(User, validated_data)
         token = RefreshToken.for_user(user)
+        
+        token.payload["is_agent"] = not user.is_superuser
+        if not user.is_superuser:
+            token.payload['test'] = user.last_name
+            token.payload["full_name"] = f"{user.first_name} {user.last_name}"
+            token.payload["email"] = user.email
+        
         data = {
             "tokens": {
                 "refresh": str(token), 
