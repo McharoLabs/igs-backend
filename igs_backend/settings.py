@@ -65,6 +65,8 @@ INSTALLED_APPS = [
     "authentication",
     "account",
     "booking",
+    "property",
+    "room",
 ]
 
 # AUTH_USER_MODEL = "authentication.User"

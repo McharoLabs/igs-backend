@@ -4,7 +4,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 from account.model.subscription_plan import SubscriptionPlan
-from user.models import Agent, LandLord
+from user.models import Agent
 from django.db.models import QuerySet
 from django.db import transaction
 import logging
@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 class Account(models.Model):
     account_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     agent = models.ForeignKey(Agent, on_delete=models.SET_NULL, null=True, related_name="agent_account")
-    landlord = models.ForeignKey(LandLord, on_delete=models.SET_NULL, null=True, related_name="landlord_account")
     plan = models.ForeignKey(SubscriptionPlan, on_delete=models.SET_NULL, null=True, blank=True)
     start_date = models.DateTimeField(default=timezone.now)
     end_date = models.DateTimeField()
@@ -47,50 +46,42 @@ class Account(models.Model):
 
     
     def account_owner(self) -> str:
-        """Returns the full name of the account owner (either agent or landlord)."""
+        """Returns the full name of the account owner (agent)"""
         if self.agent:
             return f"{self.agent.first_name} {self.agent.middle_name} {self.agent.last_name}"
-        if self.landlord:
-            return f"{self.landlord.first_name} {self.landlord.middle_name} {self.landlord.last_name}"
         
-    def can_upload_house(self, total_house: int) -> bool:
+    def can_upload(self, total_property: int) -> bool:
         """
-        Checks if the agent or landlord associated with this account can upload another house.
+        Checks if the agent associated with this account can upload another house.
         This is based on the account being active and the account's subscription plan allowing the upload 
         of the specified number of houses.
 
         Args:
-            total_house (int): The total number of houses the agent or landlord has already uploaded.
+            total_property (int): The total number of houses the agent has already uploaded.
 
         Returns:
             bool: Returns True if the account is active and the number of uploaded houses is within the limit
                 specified by the account's subscription plan. Returns False otherwise.
         """
-        if self.is_active and self.plan and total_house < self.plan.max_houses:
+        if self.is_active and self.plan and total_property < self.plan.max_houses:
             return True
         
         return False
     
     @classmethod
-    def subscribe(cls, plan: SubscriptionPlan, agent: Agent = None, landlord: LandLord = None) -> str:
-        """Subscribe the plan and create a new account for the agent or landlord and deactivate the previous active account if found
+    def subscribe(cls, plan: SubscriptionPlan, agent: Agent) -> str:
+        """Subscribe the plan and create a new account for the agent and deactivate the previous active account if found
 
         Args:
-            plan (SubscriptionPlan): Subscription plan instance for the agent or landlord
-            agent (Agent, optional): Agent for the subscribed account. Defaults to None.
-            landlord (LandLord, optional): Landlord for the subscribed account. Defaults to None.
-
-        Raises:
-            ValueError: If agent and landlord are bot instance, can not provide both agent and landlord error is raised
+            plan (SubscriptionPlan): Subscription plan instance for the agent
+            agent (Agen): Agent for the subscribed account.
 
         Returns:
             str: Success message for created account
         """
-        if agent and landlord:
-            raise ValueError("Can not provide both agent and landlord")
         
         with transaction.atomic():
-            current_active_account = cls.objects.filter(agent=agent, landlord=landlord, is_active=True).first()
+            current_active_account = cls.objects.filter(agent=agent, is_active=True).first()
 
             if current_active_account:
                 current_active_account.is_active = False
@@ -98,47 +89,31 @@ class Account(models.Model):
 
             account = cls(
                 agent=agent,
-                landlord=landlord,
                 plan=plan
             )
 
             account.save()
 
-            logger.info(f"Plan subscription for {agent if agent else landlord}")
+            logger.info(f"Plan subscription for {agent}")
         
         return f"You have subscribed to plan {account.plan}, the account expires on {str(account.end_date)}"
 
     @classmethod
-    def get_account(cls, agent: Agent = None, landlord: LandLord = None) -> 'Account':
+    def get_account(cls, agent: Agent) -> 'Account':
         """
-        Retrieve the active account associated with either an agent or a landlord. This method ensures that 
-        only one of the two parameters (agent or landlord) is provided. If both are provided, 
+        Retrieve the active account associated with either an agent. This method ensures that 
+        only one of the two parameters (agent) is provided. If both are provided, 
         a ValueError will be raised. If neither is provided, a ValueError will also be raised.
 
         Args:
-            agent (Agent, optional): The agent whose account is to be retrieved. Defaults to None.
-            landlord (LandLord, optional): The landlord whose account is to be retrieved. Defaults to None.
-
-        Raises:
-            ValueError: If both `agent` and `landlord` are provided, or if neither is provided.
+            agent (Agent): The agent whose account is to be retrieved. Defaults to None.
 
         Returns:
-            Account: The active `Account` associated with the given agent or landlord. If no active account 
+            Account: The active `Account` associated with the given agent. If no active account 
             is found, the method returns `None`.
         """
-        test = cls.objects.filter(is_active=True).first()
-        print(test)
-        account = None
-        if agent and landlord:
-            raise ValueError("Cannot provide both agent and landlord.")
         
-        if agent:
-            account = cls.objects.filter(agent=agent, is_active=True).first()
-        
-        if landlord:
-            account = cls.objects.filter(landlord=landlord, is_active=True).first()
-        
-        return account
+        return cls.objects.filter(agent=agent, is_active=True).first()
     
     @classmethod
     def get_active_accounts(cls) -> 'QuerySet[Account]':
