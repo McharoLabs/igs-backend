@@ -25,7 +25,7 @@ class UserViewSet(viewsets.ModelViewSet):
         Custom method to define permissions for each action.
         """
         if self.action == 'serve_avatar':
-            permission_classes = [permissions.IsAuthenticated, IsAgentOrLandLord]
+            permission_classes = [permissions.IsAuthenticated, IsAgent]
         else:
             permission_classes = [permissions.IsAuthenticated]
         
@@ -35,7 +35,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return None
 
     @swagger_auto_schema(
-        operation_description="Get avator for the authenticated agent or landlord",
+        operation_description="Get avator for the authenticated agent",
         operation_summary="Avator view",
         method="get",
         tags=["User"],

@@ -3,5 +3,5 @@ from . import views
 
 router = DefaultRouter()
 
-router.register(r'houses', views.HouseViewSet, basename='house')
+router.register(r'rooms', views.RoomViewSet, basename='room')
 urlpatterns = router.urls

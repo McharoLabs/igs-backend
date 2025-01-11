@@ -1,14 +1,14 @@
 from rest_framework import serializers
 
 from house.models import House
-from house.serializer.response_room_serializer import ResponseRoomSerializer
 from igs_backend import settings
 from location.serializers import ResponseLocationSerializer
 
 class ResponseHouseDetailSerializer(serializers.ModelSerializer):
     location = ResponseLocationSerializer(many=False)
-    rooms = ResponseRoomSerializer(many=True)
     images = serializers.SerializerMethodField() 
+    is_active_account = serializers.BooleanField(write_only=True)
+    agent = serializers.UUIDField(write_only=True)
 
     class Meta:
         model = House
@@ -18,7 +18,7 @@ class ResponseHouseDetailSerializer(serializers.ModelSerializer):
         """
         Generate full URLs for the images associated with this house in the desired format.
         """
-        images = obj.house_image.all()
+        images = obj.images.all()
         image_urls = []
 
         base_url = settings.PROPERTY_IMAGE_BASE_URL 

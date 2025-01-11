@@ -20,7 +20,7 @@ class Room(Property):
         
     
     @classmethod
-    def save(cls, agent: Agent, location: Location, category: str, price: str, description: str, condition: str,
+    def save_room(cls, agent: Agent, location: Location, price: str, description: str, condition: str,
              nearby_facilities: str, utilities: str, security_features: str, heating_cooling_system: str,
              furnishing_status: str, room_category: str):
         """
@@ -30,7 +30,6 @@ class Room(Property):
             property_id (uuid.UUID): The unique identifier for the property.
             agent (Agent): The agent associated with the property.
             location (Location): The location of the property.
-            category (str): The category of the property (e.g., 'Sale', 'Rental').
             price (Decimal): The price of the property.
             description (str): The description of the property.
             condition (str): The condition of the property.
@@ -56,14 +55,11 @@ class Room(Property):
         if not ROOM_CATEGORY.valid(room_category=room_category):
             raise ValueError(f"Invalid room category: {room_category}.")
         
-        if not CATEGORY.valid(category=category):
-            raise ValueError(f"Invalid property category: {category}.")
-        
 
         instance = cls(
             agent=agent,
             location=location,
-            category=category,
+            category=CATEGORY.RENTAL.value,
             price=price,
             description=description,
             condition=condition,
@@ -96,18 +92,13 @@ class Room(Property):
         """Class method to retrieve the room for specific agent owning the room
 
         Args:
-            agent (Agent): Tgent inctance
+            agent (Agent): Agent inctance
             property_id (uuid.UUID): The unique identifier for the property
 
         Returns:
             Room or None: The room instance that matches the given property ID and agent, or None if no matches is found
         """
-        room = cls.objects.filter(agent=agent, property_id=property_id).first()
-        
-        if room.is_unread_booking:
-            room.mark_read()
-            
-        return room
+        return cls.objects.filter(agent=agent, property_id=property_id).first()
     
     @classmethod
     def get_agent_rooms(cls, agent: Agent) -> 'QuerySet[Room]':
@@ -119,7 +110,7 @@ class Room(Property):
         Returns:
             QuerySet[Room]: A queryset containing all rooms associated with the given agent.
         """
-        return cls.objects.filter(agent=agent).order_by('-is_unread_booking')
+        return cls.objects.filter(agent=agent)
     
     @classmethod
     def get_rooms_with_no_images(cls, agent: Agent) -> 'QuerySet[Room]':

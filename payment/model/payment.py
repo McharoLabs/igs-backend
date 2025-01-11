@@ -4,10 +4,10 @@ import uuid
 from django.db import models
 from django.core.exceptions import ValidationError
 from account.models import SubscriptionPlan, Account
-from house.models import House, Room
 from payment.enums.payment_status import PaymentStatus
 from payment.enums.payment_type import PaymentType
-from user.models import Agent, LandLord
+from property.models import Property
+from user.models import Agent
 from utils.phone_number import validate_phone_number
 from django.utils import timezone
 
@@ -17,21 +17,16 @@ class Payment(models.Model):
     payment_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     amount = models.DecimalField(max_digits=32, decimal_places=2)
     
-    # Fields for booking type
-    agent = models.ForeignKey(Agent, on_delete=models.RESTRICT, related_name="agent_account_payment", null=True, blank=True)
-    landlord = models.ForeignKey(Room, on_delete=models.RESTRICT, related_name="landlord_account_payment", null=True, blank=True)
-    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.RESTRICT, related_name="plan_payment", null=True, blank=True)
+    agent = models.ForeignKey(Agent, on_delete=models.RESTRICT, related_name="payments", null=True, blank=True)
+    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.RESTRICT, related_name="payment", null=True, blank=True)
     
-    # Fields for account type
-    house = models.ForeignKey(House, on_delete=models.RESTRICT, related_name="house_payment", null=True, blank=True)
-    room = models.ForeignKey(Room, on_delete=models.RESTRICT, related_name="room_payment", null=True, blank=True)
+    property = models.ForeignKey(Property, on_delete=models.RESTRICT, related_name="payments", null=True, blank=True)
     
     phone_number = models.CharField(max_length=15, validators=[validate_phone_number], null=False)
     status = models.CharField(max_length=50, choices=PaymentStatus.choices(), default=PaymentStatus.default())
     payment_type = models.CharField(max_length=100, choices=PaymentType.choices(), default=PaymentType.default())
     payment_date = models.DateTimeField(auto_now_add=True)
     
-    # Fields to track payment consumption
     is_consumed = models.BooleanField(default=False) 
     consumed_at = models.DateTimeField(null=True, blank=True)
 
@@ -53,7 +48,7 @@ class Payment(models.Model):
             if not hasattr(self, "_called_from_activate_account"):
                 self._called_from_activate_account = True
 
-                account = Account.subscribe(plan=self.plan, agent=self.agent, landlord=self.landlord)
+                account = Account.subscribe(plan=self.plan, agent=self.agent)
                 self.mark_as_consumed()
 
                 del self._called_from_activate_account 
@@ -63,20 +58,14 @@ class Payment(models.Model):
             raise e
     
     @classmethod
-    def auto_mark_room_booked(cls) -> None:
+    def auto_mark_property_booked(cls) -> None:
         payments = cls.objects.filter(is_consumed=False)
 
         if payments:
             for payment in payments:
-                if payment.house: 
-                    if payment.house.is_full_house_rental:
-                        payment.house.mark_booked()
-                        payment.mark_as_consumed()
-                        logger.info(f"House {payment.house} marked booked")
-                    elif payment.room:
-                        payment.room.mark_booked()
-                        payment.mark_as_consumed()
-                        logger.info(f"Room {payment.room} marked booked")
+                if payment.payment_type == PaymentType.BOOKING.value:
+                    payment.property.mark_booked()
+                    payment.mark_as_consumed()
         
     @classmethod
     def auto_activate_account(cls) -> None:
@@ -88,44 +77,52 @@ class Payment(models.Model):
                 payment.activate_account()
 
     @classmethod
-    def create_payment(
+    def create(
         cls, phone_number: str, 
         payment_type: PaymentType, 
         amount: Decimal, 
-        agent: Agent = None, 
-        landlord: LandLord = None, 
-        house: House = None, 
-        room: Room = None, 
+        agent: Agent = None,
+        property: Property = None,
         plan: SubscriptionPlan = None
     ) -> 'Payment':
-        """Creates a payment instance based on payment_type and the provided parameters.
-        
+        """Class method to create and save a temporary payment.
+
+        This method validates the payment data and ensures that the provided
+        information is consistent with the payment type. It will raise a 
+        ValidationError if there are any inconsistencies in the payment data.
+
         Args:
-            phone_number (str): Phone number for the request
-            payment_type (PaymentType): The type of the payment (Booking or Account).
-            amount (Decimal): The amount of the payment.
-            agent (Agent, optional): The agent associated with the payment (if payment_type is BOOKING).
-            landlord (LandLord, optional): The landlord associated with the payment (if payment_type is BOOKING).
-            house (House, optional): The house associated with the payment (if payment_type is ACCOUNT).
-            room (Room, optional): The room associated with the payment (if payment_type is ACCOUNT).
-            plan (SubscriptionPlan, optional): The subscription plan associated with the payment (if payment_type is BOOKING).
-        
+            phone_number (str): Tenant or agent phone number. This is required 
+                                for identifying the user associated with the payment.
+            payment_type (PaymentType): The type of payment being made (e.g., 
+                                        booking, account, etc.).
+            amount (Decimal): The amount paid. This should be a valid decimal 
+                            value representing the payment sum.
+            agent (Agent, optional): An optional agent instance associated 
+                                    with the payment. Default is None.
+            property (Property, optional): An optional property instance 
+                                        associated with the payment. 
+                                        Default is None.
+            plan (SubscriptionPlan, optional): An optional subscription plan 
+                                            instance linked to the payment. 
+                                            Default is None.
+
         Raises:
-            ValidationError: If both agent and landlord are provided for booking type.
-            ValueError: If the amount is not a valid decimal.
-        
+            ValidationError: If the payment type and provided data are inconsistent, 
+                            a ValidationError will be raised.
+            ValueError: If the provided amount is not a valid decimal number.
+
         Returns:
-            Payment: The created Payment instance.
+            Payment: The created Payment instance that has been validated and saved.
         """
-        
         if payment_type == PaymentType.BOOKING:
-            if agent or landlord or plan:
-                raise ValidationError("For Booking type, agent, landlord, and plan should not be provided.")
-            
+            if agent or plan:
+                raise ValidationError("For Booking type, agent and plan should not be provided.")
+        
         elif payment_type == PaymentType.ACCOUNT:
-            if house or room:
-                raise ValidationError("For Account type, house and room should not be provided.")
-            
+            if property:
+                raise ValidationError("For Account type, property should not be provided.")
+        
         try:
             amount = Decimal(amount)
         except:
@@ -134,12 +131,13 @@ class Payment(models.Model):
         payment = cls(
             amount=amount,
             agent=agent,
-            landlord=landlord,
-            house=house,
-            room=room,
+            property=property,
             plan=plan,
             phone_number=phone_number,
             payment_type=payment_type
         )
+        
         payment.save()
+        
         return payment
+

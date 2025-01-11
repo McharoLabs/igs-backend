@@ -1,10 +1,10 @@
 from rest_framework import serializers
-from house.models import House
 from igs_backend import settings
 from location.serializers import ResponseLocationSerializer
+from room.models import Room
 
 
-class ResponseHouseSerializer(serializers.ModelSerializer):
+class ResponseRoomSerializer(serializers.ModelSerializer):
     location = ResponseLocationSerializer(many=False)
     images = serializers.SerializerMethodField()
     is_active_account = serializers.BooleanField(write_only=True)
@@ -12,12 +12,12 @@ class ResponseHouseSerializer(serializers.ModelSerializer):
     is_locked = serializers.BooleanField(write_only=True)
 
     class Meta:
-        model = House
+        model = Room
         fields = '__all__'
 
     def get_images(self, obj):
         """
-        Generate full URLs for the images associated with this house in the desired format.
+        Generate full URLs for the images associated with this Room in the desired format.
         """
         images = obj.images.all()
         image_urls = []
@@ -34,19 +34,19 @@ class ResponseHouseSerializer(serializers.ModelSerializer):
         return image_urls
     
 
-class ResponseMyHouseSerializer(serializers.ModelSerializer):
+class ResponseMyRoomSerializer(serializers.ModelSerializer):
     location = ResponseLocationSerializer(many=False)
     images = serializers.SerializerMethodField()
     is_active_account = serializers.BooleanField(write_only=True)
     agent = serializers.UUIDField(write_only=True)
 
     class Meta:
-        model = House
+        model = Room
         fields = '__all__'
 
     def get_images(self, obj):
         """
-        Generate full URLs for the images associated with this house in the desired format.
+        Generate full URLs for the images associated with this Room in the desired format.
         """
         images = obj.images.all()
         image_urls = []

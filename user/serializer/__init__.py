@@ -1,5 +1,3 @@
-from .agent_serializer import RequestAgentRegistrationSerializer, ResponseAgentRegistrationSerializer
-from .landlord_serializer import RequestLandLordRegistrationSerializer, ResponseLandLordRegistrationSerializer
+from .agent_serializer import RequestAgentRegistrationSerializer
 from .response_agent_serializer import ResponseAgentSerializer
 from .request_avatar_serializer import RequestAvatarSerializer
-from .response_landlord_serailizer import ResponseLandLordSerializer

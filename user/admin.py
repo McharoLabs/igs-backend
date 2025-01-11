@@ -11,8 +11,3 @@ class AgentAdmin(UserAdmin):
     list_display = UserAdmin.list_display
     search_fields = UserAdmin.search_fields
     list_filter = UserAdmin.list_filter
-
-class LandLordAdmin(UserAdmin):
-    list_display = UserAdmin.list_display
-    search_fields = UserAdmin.search_fields
-    list_filter = UserAdmin.list_filter

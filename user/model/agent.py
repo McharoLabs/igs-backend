@@ -1,12 +1,10 @@
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError
 from .user import User
 import logging
 
 logger = logging.getLogger(__name__)
 
 class Agent(User):
-    pass
     class meta:
         db_table = 'agent'
         
@@ -33,24 +31,16 @@ class Agent(User):
         if cls.is_phone_number_exist(phone_number=phone_number):
             raise ValidationError(f"Phone number already exists.")
         
-        try:  
-          agent = cls(
-              first_name=first_name,
-              middle_name=middle_name,
-              last_name=last_name,
-              phone_number=phone_number,
-              gender=gender,
-              email=email,
-              password=password,
-              avatar=avatar if avatar else 'avatars/avatar1.png'
-          )
+        agent = cls(
+            first_name=first_name,
+            middle_name=middle_name,
+            last_name=last_name,
+            phone_number=phone_number,
+            gender=gender,
+            email=email,
+            password=password,
+            avatar=avatar if avatar else 'avatars/avatar1.png'
+        )
           
-          agent.set_password(password)
-          agent.save()
-          logger.info(f'Agent saved successful to the database: {agent}')
-        except IntegrityError as e:
-            logger.error(f"There was an issue saving the agent to the database: {e}", exc_info=True)
-            raise IntegrityError("There was an issue saving the agent to the database: " + str(e))
-        except Exception as e:
-            logger.error(f"An unexpected error occurred while saving the agent: {e}", exc_info=True)
-            raise Exception(f"An unexpected error occurred while saving the agent: {str(e)}")
+        agent.set_password(password)
+        agent.save()

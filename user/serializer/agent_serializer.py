@@ -36,6 +36,3 @@ class RequestAgentRegistrationSerializer(serializers.Serializer):
         if not re.match(pattern, value):
             raise serializers.ValidationError("Invalid Tanzanian phone number. It should start with +255 and be followed by 9 digits.")
         return value
-    
-class ResponseAgentRegistrationSerializer(serializers.Serializer):
-    detail = serializers.CharField(max_length=255)

@@ -14,7 +14,7 @@ from user.models import Agent
 
 class Property(models.Model):
     property_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    agent = models.ForeignKey(Agent, on_delete=models.RESTRICT, null=True, related_name="properties")
+    agent = models.ForeignKey(Agent, on_delete=models.RESTRICT, null=False, related_name="properties")
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="properties")
     category = models.CharField(max_length=100, choices=CATEGORY.choices(), default=CATEGORY.default(), null=False, blank=False)
     price = models.DecimalField(max_digits=32, decimal_places=2)
@@ -26,7 +26,6 @@ class Property(models.Model):
     heating_cooling_system = models.CharField(max_length=255, choices=HEATING_COOLING_SYSTEM.choices(), default=HEATING_COOLING_SYSTEM.default(), null=False, blank=False)
     furnishing_status = models.CharField(max_length=255, choices=FURNISHING_STATUS.choices(), default=FURNISHING_STATUS.default(), null=False, blank=False)
     status = models.CharField(max_length=255, choices=STATUS.choices(), default=STATUS.default(), null=False, blank=False)
-    is_unread_booking = models.BooleanField(default=False)
     is_active_account = models.BooleanField(default=True)
     is_locked = models.BooleanField(default=False)
     listing_date = models.DateTimeField(default=timezone.now, editable=False)
@@ -38,12 +37,12 @@ class Property(models.Model):
     def __str__(self):
         return f"Property {self.property_id}"
     
-    def mark_read(self) -> None:
-        """Instance method to mark the booking as read.
-        """
-        if self.is_unread_booking:
-            self.is_unread_booking = True
-            self.save(update_fields=['is_unread_booking'])
+    def available(self) -> bool:
+        return self.status == STATUS.AVAILABLE.value
+    
+    def mark_booked(self) -> None:
+        self.status = STATUS.BOOKED.value
+        self.save(update_fields=['status'])
     
     @classmethod
     def total_properties_for_agent(cls, agent: Agent) -> int:
@@ -56,3 +55,63 @@ class Property(models.Model):
             int: Total number of properties
         """
         return cls.objects.filter(agent=agent).count()
+    
+    @classmethod
+    def get_property_by_id(cls, property_id: uuid.UUID) -> 'Property | None':
+        """Class method to retrieve property instance
+
+        Args:
+            property_id (uuid.UUID): Unique property id to retrieve the instance
+
+        Returns:
+            Property | None: Instance of property that matches the property ID if found, otherwise None
+        """
+        return cls.objects.filter(property_id=property_id).first()
+    
+    @classmethod
+    def get_agent_property_by_id(cls, agent: Agent, property_id: uuid.UUID) -> 'Property | None':
+        """Class method to retrieve property for the given agent and property ID
+
+        Args:
+            agent (Agent): Agent instance
+            property_id (uuid.UUID): Unique property ID
+
+        Returns:
+            Property | None: Property instance that matches the criteria provided if found, Otherwise None
+        """
+        return cls.objects.filter(agent=agent, property_id=property_id).first()
+    
+    @classmethod
+    def activate_inactive_properties(cls, agent: Agent):
+        """
+        Activates all inactive houses associated with the given agent.
+
+        Args:
+            agent (Agent, optional): The agent associated with the houses to activate.
+
+        Raises:
+            ValueError: If both agent are provided.
+        """
+        inactive_houses = None
+        
+        inactive_houses = cls.objects.filter(is_active_account=False, is_locked=False, status=STATUS.AVAILABLE.value, agent=agent)
+        
+        for house in inactive_houses:
+            house.is_active_account = True
+            house.save(update_fields=["is_active_account"])
+            
+    @classmethod
+    def deactivate_active_properties(cls, agent: Agent):
+        """
+        Deactivates all inactive houses associated with the given agent.
+
+        Args:
+            agent (Agent, optional): The agent associated with the houses to activate.
+        """
+        inactive_houses = None
+        
+        inactive_houses = cls.objects.filter(is_active_account=True, is_locked=False, status=STATUS.AVAILABLE.value, agent=agent)
+        
+        for house in inactive_houses:
+            house.is_active_account = False
+            house.save(update_fields=["is_active_account"])

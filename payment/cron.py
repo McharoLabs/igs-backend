@@ -14,6 +14,6 @@ def auto_activate_account_job():
 
 def auto_mark_room_booked_job():
     try:
-      Payment.auto_mark_room_booked()
+      Payment.auto_mark_property_booked()
     except Exception as e:
       logger.error(f"Error expiring accounts: {e}", exc_info=True)

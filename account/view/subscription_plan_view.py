@@ -4,16 +4,17 @@ from django.http import HttpRequest
 from rest_framework import viewsets, permissions, status
 from account.models import SubscriptionPlan
 from account.serializers import ResponseSubscriptionPlanSerailizer, RequestSubscriptionSerializer
-from authentication.custom_permissions import *
+from authentication.custom_permissions import IsAgent
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 import logging
 
 from payment.enums.payment_type import PaymentType
 from payment.models import Payment
 from shared.serializer.detail_response_serializer import DetailResponseSerializer
-from user.models import User, Agent, LandLord
+from user.models import User, Agent
 
 
 
@@ -27,10 +28,10 @@ class SubscriptionPlanViewSet(viewsets.ModelViewSet):
         """
         Custom method to define permissions for each action.
         """
-        agent_landlord_actions = {'subscribe'}
+        agent_actions = {'subscribe'}
 
-        if self.action in agent_landlord_actions:
-            permission_classes = [permissions.IsAuthenticated, IsAgentOrLandLord]
+        if self.action in agent_actions:
+            permission_classes = [permissions.IsAuthenticated, IsAgent]
         else:
             permission_classes = [permissions.AllowAny]
 
@@ -40,11 +41,24 @@ class SubscriptionPlanViewSet(viewsets.ModelViewSet):
         return SubscriptionPlan.objects.none()
     
     @swagger_auto_schema(
-        operation_description="Retrieve subscriptions for the authenticated agent or landlord.",
+        operation_description="Retrieve subscriptions for the authenticated agent.",
         operation_summary="Retrieve subscription",
         method="get",
-        tags=["Account"],
-        responses={200: ResponseSubscriptionPlanSerailizer(many=True), 400: "Invalid input data"},
+        tags=["account"],
+        responses={
+            200: openapi.Response(
+                description="Plans retrieved successful",
+                schema=ResponseSubscriptionPlanSerailizer(many=True)
+            ), 
+            404: openapi.Response(
+                description="bad request",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            500: openapi.Response(
+                description="Internal server error",
+                schema=DetailResponseSerializer(many=False)
+            )
+        },
     )
     @action(detail=False, methods=['get'])
     def get_subscription(self, request: HttpRequest):
@@ -61,14 +75,24 @@ class SubscriptionPlanViewSet(viewsets.ModelViewSet):
             return Response({"detail": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
     @swagger_auto_schema(
-        operation_description="New subscription payment plan for the authenticated agent or landlord.",
+        operation_description="New subscription payment plan for the authenticated agent.",
         operation_summary="Subscription",
         method="post",
-        tags=["Account"],
+        tags=["account"],
         request_body=RequestSubscriptionSerializer,
         responses={
-            200: DetailResponseSerializer(many=False),
-            400: "Invalid input data"
+            201: openapi.Response(
+                description="Subscription saved successfuk, pending for payment complition",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            400: openapi.Response(
+                description="Frorbidden to perform the task due to unknown agent",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            400: openapi.Response(
+                description="Plan not found",
+                schema=DetailResponseSerializer(many=False)
+            )
         },
     )
     @action(detail=False, methods=['post'])
@@ -79,23 +103,22 @@ class SubscriptionPlanViewSet(viewsets.ModelViewSet):
         
         user = cast(User, request.user)
         
-        agent = Agent.get_agent_by_phone_number(phone_number=user.phone_number)
-        landlord = LandLord.get_landlord_by_phone_number(phone_number=user.phone_number)
-        plan = SubscriptionPlan.get_plan_by_id(subscription_plan_id=validated_data.get("plan_id"))
-        
-        if agent is None and landlord is None:
-            return Response(data={"detail": "You are forbidden to view this information"}, status=status.HTTP_404_NOT_FOUND)
-        
-        if plan is None:
-            return Response(data={"detail": "Subscription plan not found"}, status=status.HTTP_404_NOT_FOUND)
         
         try:
-            payment = Payment.create_payment(
+            agent = Agent.get_agent_by_phone_number(phone_number=user.phone_number)
+            plan = SubscriptionPlan.get_plan_by_id(subscription_plan_id=validated_data.get("plan_id"))
+            
+            if agent is None:
+                return Response(data={"detail": "You are forbidden to view this information"}, status=status.HTTP_404_NOT_FOUND)
+            
+            if plan is None:
+                return Response(data={"detail": "Subscription plan not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+            payment = Payment.create(
                 phone_number=validated_data.get("phone_number"), 
                 payment_type=PaymentType.ACCOUNT, 
                 amount=plan.price, 
                 agent=agent, 
-                landlord=landlord, 
                 plan=plan
             )
             

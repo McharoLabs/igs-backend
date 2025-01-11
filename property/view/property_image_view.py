@@ -1,7 +1,4 @@
-from decimal import Decimal
 from typing import cast
-import uuid
-from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 from rest_framework import viewsets, permissions, status
 from authentication.custom_permissions import *
@@ -9,17 +6,16 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from house.enums.room_category import ROOM_CATEGORY
-from house.models import  House, PropertyImage
-from house.serializers import RequestPropertyImageSerializer
+from igs_backend import settings
+from property.model.property import Property
+from property.models import PropertyImage
+from property.serializers import RequestPropertyImageSerializer
 from shared.seriaizers import DetailResponseSerializer
 import logging
-from rest_framework.pagination import PageNumberPagination
-from django.db import transaction
 import os
 import mimetypes
 
-from user.models import Agent, LandLord, User
+from user.models import Agent, User
 
 
 logger = logging.getLogger(__name__)
@@ -33,7 +29,7 @@ class PropertyImageViewSet(viewsets.ModelViewSet):
         Custom method to define permissions for each action.
         """
         if self.action == 'upload_images':
-            permission_classes = [permissions.IsAuthenticated, IsAgentOrLandLord]
+            permission_classes = [permissions.IsAuthenticated, IsAgent]
         else:
             permission_classes = [permissions.AllowAny]
         
@@ -46,10 +42,13 @@ class PropertyImageViewSet(viewsets.ModelViewSet):
         operation_description="Add property images by providing necessary details like house id and an array of images, etc.",
         operation_summary="Add property images",
         method="post",
-        tags=["Property Images"],
+        tags=["property"],
         request_body=RequestPropertyImageSerializer,
         responses={
-            200: DetailResponseSerializer(many=False), 
+            201: openapi.Response(
+                description="Sucessful images added for the property",
+                schema=DetailResponseSerializer(many=False)
+            ), 
             401: openapi.Response(
                 description="Unauthorized",
                 schema=DetailResponseSerializer(many=False)
@@ -66,31 +65,27 @@ class PropertyImageViewSet(viewsets.ModelViewSet):
     )
     @action(detail=False, methods=['post'])
     def upload_images(self, request: HttpRequest):
-        print(request.data)
         user = cast(User, request.user)
         request_serializer = RequestPropertyImageSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
         validated_data = request_serializer.validated_data
         
-        landlord: LandLord = None
         agent: Agent = None
         
         if hasattr(user, 'agent'):
             agent = cast(Agent, user)
-        elif hasattr(user, 'landlord'):
-            landlord = cast(LandLord, user)
         else:
             return Response(data={"detail": "You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)
         
         try:                
-            house = House.get_house_by_agent_or_landlord(agent=agent, landlord=landlord, house_id=validated_data.get("house_id"))
+            property = Property.get_agent_property_by_id(agent=agent, property_id=validated_data.get("property_id"))
             
-            if house is None:
-                return Response(data={"detail": "House not found"}, status=status.HTTP_404_NOT_FOUND)
+            if property is None:
+                return Response(data={"detail": "Property not found not found"}, status=status.HTTP_404_NOT_FOUND)
             
-            PropertyImage.save_images(house=house, images=validated_data.get("images"))
+            PropertyImage.save(property=property, images=validated_data.get("images"))
             
-            return Response(data={"detail": f"You have successful uploded images for {house.title}"}, status=status.HTTP_200_OK)
+            return Response(data={"detail": f"You have successful uploded images"}, status=status.HTTP_201_CREATED)
         except ValueError as e:
             logger.error(f"Validation error occurred: {e}", exc_info=True)
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -102,7 +97,7 @@ class PropertyImageViewSet(viewsets.ModelViewSet):
         operation_description="View property image",
         operation_summary="View property image",
         method="get",
-        tags=["Property Images"],
+        tags=["property"],
         responses={
             200: "Image response", 
             400: "Invalid input data",

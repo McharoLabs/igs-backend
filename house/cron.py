@@ -1,30 +1,27 @@
 import logging
 from account.models import Account
-from house.models import House
+from property.models import Property
 logger = logging.getLogger(__name__)
 
 def activate_house_job():
     try:
-        active_accounts = Account.get_active_accounts()
+        accounts = Account.get_active_accounts()
         
-        for active in active_accounts:
-            if active.agent:
-                House.activate_inactive_houses(agent=active.agent)
-            if active.landlord:
-                House.activate_inactive_houses(landlord=active.landlord)
+        for account in accounts:
+            Property.activate_inactive_properties(agent=account.agent)
     
     except Exception as e:
-        logger.error(f"Error in the house activation job: {e}", exc_info=True)
+        logger.error(f"Error in the property activation job: {e}", exc_info=True)
         
 def deactivate_house_job():
     try:
-        active_accounts = Account.get_inactive_accounts()
+        accounts = Account.get_inactive_accounts()
         
-        for active in active_accounts:
-            if active.agent:
-                House.deactivate_active_houses(agent=active.agent)
-            if active.landlord:
-                House.deactivate_active_houses(landlord=active.landlord)
+        for account in accounts:
+            active = Account.get_account(agent=account.agent)
+            
+            if active is None:
+                Property.deactivate_active_properties(agent=account.agent)
     
     except Exception as e:
-        logger.error(f"Error in the house deactivation job: {e}", exc_info=True)
+        logger.error(f"Error in the property deactivation job: {e}", exc_info=True)

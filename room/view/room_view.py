@@ -8,12 +8,12 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from house.enums.category import CATEGORY
-from house.models import House
-from house.serializers import RequestHouseSerializer, ResponseHouseSerializer, ResponseHouseDetailSerializer, ResponseMyHouseSerializer
+from house.enums.room_category import ROOM_CATEGORY
 from location.models import District
 from location.models import Location
 from property.models import Property, PropertyImage
+from room.models import Room
+from room.serializers import RequestRoomSerializer, ResponseRoomSerializer, ResponseMyRoomSerializer
 from shared.seriaizers import DetailResponseSerializer
 import logging
 from rest_framework.pagination import PageNumberPagination
@@ -30,15 +30,15 @@ from django.views.decorators.cache import never_cache
 logger = logging.getLogger(__name__)
 
 @method_decorator(never_cache, name='dispatch')
-class HouseViewSet(viewsets.ModelViewSet):
+class RoomViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
-        return RequestHouseSerializer
-
+        return RequestRoomSerializer
+    
     def get_permissions(self):
         """
         Custom method to define permissions for each action.
         """
-        if self.action == 'add_house' or self.action == 'list_houses' or self.action == 'retrieve_house':
+        if self.action == 'add_room' or self.action == 'room_list' or self.action == 'retrieve_room':
             permission_classes = [permissions.IsAuthenticated, IsAgent]
         else:
             permission_classes = [permissions.AllowAny]
@@ -46,14 +46,14 @@ class HouseViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
     
     def get_queryset(self):
-        return House.objects.none()
-
+        return Room.objects.none()
+    
     @swagger_auto_schema(
-        operation_description="Add a new house by providing the necessary details such as agent, location, price, etc.",
-        operation_summary="Create New House",
+        operation_description="Add a new room by providing the necessary details such as agent, location, price, etc.",
+        operation_summary="Create New Room",
         method="post",
-        tags=["house"],
-        request_body=RequestHouseSerializer,
+        tags=["room"],
+        request_body=RequestRoomSerializer,
         responses={
             201: openapi.Response(
                 description="House property added successful",
@@ -83,9 +83,9 @@ class HouseViewSet(viewsets.ModelViewSet):
     )
     @action(detail=False, methods=['post'])
     @transaction.atomic(savepoint=False)
-    def add_house(self, request: HttpRequest): 
+    def add_room(self, request: HttpRequest): 
         user = cast(User, request.user)      
-        request_serializer = RequestHouseSerializer(data=request.data)
+        request_serializer = RequestRoomSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
         validated_data = request_serializer.validated_data
 
@@ -110,20 +110,17 @@ class HouseViewSet(viewsets.ModelViewSet):
                     longitude=validated_data.get("longitude")
                 )
 
-                response = House.save_house(
+                response = Room.save_room(
                     location=location, 
                     description=validated_data.get("description"), 
                     price=validated_data.get("price"), 
                     condition=validated_data.get("condition"), 
                     nearby_facilities=validated_data.get("nearby_facilities"),
-                    category=validated_data.get("category"),
                     utilities=validated_data.get("utilities"),
                     security_features=validated_data.get("security_features"),
                     heating_cooling_system=validated_data.get("heating_cooling_system"),
                     furnishing_status=validated_data.get("furnishing_status"),
-                    total_bath_room=validated_data.get("total_bath_room"),
-                    total_bed_room=validated_data.get("total_bed_room"),
-                    total_dining_room=validated_data.get("total_dining_room"),
+                    room_category=validated_data.get("room_category"),
                     agent=agent
                 )
                 
@@ -131,7 +128,7 @@ class HouseViewSet(viewsets.ModelViewSet):
                 
                 PropertyImage.save(property=property, images=validated_data.get("images"))
 
-                response_serializer = DetailResponseSerializer({"detail": "House uploaded successful"})
+                response_serializer = DetailResponseSerializer({"detail": "Room uploaded successful"})
                 return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
         except ValueError as e:
@@ -140,94 +137,15 @@ class HouseViewSet(viewsets.ModelViewSet):
         except Exception as e:
             logger.error(f"Unexpected error occurred: {e}", exc_info=True)
             return Response({"detail": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+        
     @swagger_auto_schema(
-        operation_description="Retrieve a house by its ID",
-        operation_summary="Retrieve House",
+        operation_description="List all rooms",
+        operation_summary="List Room",
         method="get",
-        tags=["house"],
-        responses={
-            200: ResponseHouseDetailSerializer(many=False), 
-            404: openapi.Response(
-                description="Not found",
-                schema=DetailResponseSerializer(many=False)
-            ),
-            401: openapi.Response(
-                description="Unauthorized",
-                schema=DetailResponseSerializer(many=False)
-            ),
-            500: openapi.Response(
-                description="Internal serevr error",
-                schema=DetailResponseSerializer(many=False)
-            ),
-        },
-    )
-    @action(detail=True, methods=['get'])
-    def retrieve_house(self, request: HttpRequest, pk: uuid.UUID=None):
-        """Retrieve a specific house by ID."""
-        try:
-            user = cast(User, request.user)
-            agent: Agent = None
-
-            if hasattr(user, 'agent'):
-                agent = cast(Agent, user)
-            else:
-                return Response(data={"detail": "you are not authorized to view this resource"}, status=status.HTTP_401_UNAUTHORIZED)
-            
-            house = House.get_agent_house(agent=agent, property_id=pk)
-            
-            if not house:
-                return Response({"detail": "House not found"}, status=status.HTTP_404_NOT_FOUND)
-            serializer = ResponseHouseDetailSerializer(house, many=False)
-            return Response(data=serializer.data, status=status.HTTP_200_OK)
-        except Exception as e:
-          logger.error(f"Un expected error occured while getting house with id {pk}", exc_info=True)
-          return Response(data={"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-      
-    @swagger_auto_schema(
-        operation_description="Retrieve house details for the tenant",
-        operation_summary="Retrieve House Detail For Tenant",
-        method="get",
-        tags=["house"],
-        responses={
-            200: ResponseHouseDetailSerializer(many=False), 
-            404: openapi.Response(
-                description="Not found",
-                schema=DetailResponseSerializer(many=False)
-            ),
-            401: openapi.Response(
-                description="Unauthorized",
-                schema=DetailResponseSerializer(many=False)
-            ),
-            500: openapi.Response(
-                description="Internal serevr error",
-                schema=DetailResponseSerializer(many=False)
-            ),
-        },
-    )
-    @action(detail=True, methods=['get'])
-    def house_detail(self, request: HttpRequest, pk: uuid.UUID=None):
-        """Retrieve a specific house by ID."""
-        try:
-            
-            house = House.get_house_by_id(property_id=pk)
-            
-            if not house:
-                return Response({"detail": "House not found"}, status=status.HTTP_404_NOT_FOUND)
-            serializer = ResponseHouseDetailSerializer(house, many=False)
-            return Response(data=serializer.data, status=status.HTTP_200_OK)
-        except Exception as e:
-          logger.error(f"Un expected error occured while getting house with id {pk}", exc_info=True)
-          return Response(data={"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    @swagger_auto_schema(
-        operation_description="List all houses",
-        operation_summary="List Houses",
-        method="get",
-        tags=["house"],
+        tags=["room"],
         responses={
             200: openapi.Response(
-                description="A paginated list of houses",
+                description="A paginated list of rooms",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -255,7 +173,7 @@ class HouseViewSet(viewsets.ModelViewSet):
                                         type=openapi.TYPE_ARRAY,
                                         items=openapi.Schema(type=openapi.TYPE_STRING),
                                     ),
-                                    'category': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'room_category': openapi.Schema(type=openapi.TYPE_STRING),
                                     'price': openapi.Schema(type=openapi.TYPE_STRING),
                                     'description': openapi.Schema(type=openapi.TYPE_STRING),
                                     'condition': openapi.Schema(type=openapi.TYPE_STRING),
@@ -264,10 +182,6 @@ class HouseViewSet(viewsets.ModelViewSet):
                                     'security_features': openapi.Schema(type=openapi.TYPE_STRING),
                                     'heating_cooling_system': openapi.Schema(type=openapi.TYPE_STRING),
                                     'furnishing_status': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'total_bed_room': openapi.Schema(type=openapi.TYPE_INTEGER),
-                                    'total_dining_room': openapi.Schema(type=openapi.TYPE_INTEGER),
-                                    'total_bath_room': openapi.Schema(type=openapi.TYPE_INTEGER),
-                                    'status': openapi.Schema(type=openapi.TYPE_STRING),
                                     'is_locked': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                                     'listing_date': openapi.Schema(type=openapi.TYPE_STRING),
                                     'updated_at': openapi.Schema(type=openapi.TYPE_STRING),
@@ -284,7 +198,7 @@ class HouseViewSet(viewsets.ModelViewSet):
         }
     )
     @action(detail=False, methods=['get'])
-    def list_houses(self, request: HttpRequest):
+    def room_list(self, request: HttpRequest):
         user = cast(User, request.user)
         
         try:
@@ -293,29 +207,180 @@ class HouseViewSet(viewsets.ModelViewSet):
             if agent is None:
                 return Response(data={"detail": "Agent not found"}, status=status.HTTP_404_NOT_FOUND)
             
-            houses = House.get_agent_houses(agent=agent)
+            houses = Room.get_agent_rooms(agent=agent)
             
             paginator = PageNumberPagination()
             page = paginator.paginate_queryset(houses, request)
 
             if page is not None:
-                serializer = ResponseMyHouseSerializer(page, many=True)
+                serializer = ResponseMyRoomSerializer(page, many=True)
                 return paginator.get_paginated_response(serializer.data)
 
-            serializer = ResponseMyHouseSerializer(houses, many=True)
+            serializer = ResponseMyRoomSerializer(houses, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
             
         except PermissionDenied as e:
             return Response(data={"detail": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-    
+        
     @swagger_auto_schema(
-        operation_description="List filtered houses",
-        operation_summary="Filtered Houses",
+        operation_description="Retrieve a room by property ID and agent",
+        operation_summary="Retrieve Agent Room",
         method="get",
-        tags=["house"],
+        tags=["room"],
         responses={
             200: openapi.Response(
-                description="A paginated list of houses",
+                description="Retrieve a room",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'property_id': openapi.Schema(type=openapi.TYPE_STRING),
+                        'location': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'location_id': openapi.Schema(type=openapi.TYPE_STRING),
+                                'region': openapi.Schema(type=openapi.TYPE_STRING),
+                                'district': openapi.Schema(type=openapi.TYPE_STRING),
+                                'ward': openapi.Schema(type=openapi.TYPE_STRING),
+                                'latitude': openapi.Schema(type=openapi.TYPE_STRING),
+                                'longitude': openapi.Schema(type=openapi.TYPE_STRING),
+                            }
+                        ),
+                        'images': openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(type=openapi.TYPE_STRING),
+                        ),
+                        'room_category': openapi.Schema(type=openapi.TYPE_STRING),
+                        'price': openapi.Schema(type=openapi.TYPE_STRING),
+                        'status': openapi.Schema(type=openapi.TYPE_STRING),
+                        'description': openapi.Schema(type=openapi.TYPE_STRING),
+                        'condition': openapi.Schema(type=openapi.TYPE_STRING),
+                        'nearby_facilities': openapi.Schema(type=openapi.TYPE_STRING),
+                        'utilities': openapi.Schema(type=openapi.TYPE_STRING),
+                        'security_features': openapi.Schema(type=openapi.TYPE_STRING),
+                        'heating_cooling_system': openapi.Schema(type=openapi.TYPE_STRING),
+                        'furnishing_status': openapi.Schema(type=openapi.TYPE_STRING),
+                        'is_locked': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        'listing_date': openapi.Schema(type=openapi.TYPE_STRING),
+                        'updated_at': openapi.Schema(type=openapi.TYPE_STRING),
+                    }
+                ),
+            ),
+            404: openapi.Response(
+                description="Not found",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            401: openapi.Response(
+                description="Unauthorized",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            500: openapi.Response(
+                description="Internal serevr error",
+                schema=DetailResponseSerializer(many=False)
+            ),
+        },
+    )
+    @action(detail=True, methods=['get'])
+    def retrieve_room(self, request: HttpRequest, pk: uuid.UUID=None):
+        """Retrieve a specific room by ID."""
+        try:
+            user = cast(User, request.user)
+            agent: Agent = None
+
+            if hasattr(user, 'agent'):
+                agent = cast(Agent, user)
+            else:
+                return Response(data={"detail": "You are not authorized to view this resource"}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            room = Room.get_agent_room(agent=agent, property_id=pk)
+            
+            if not room:
+                return Response({"detail": "Room not found"}, status=status.HTTP_404_NOT_FOUND)
+            serializer = ResponseMyRoomSerializer(room, many=False)
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+          logger.error(f"Un expected error occured while getting house with id {pk}", exc_info=True)
+          return Response(data={"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+      
+    @swagger_auto_schema(
+        operation_description="Retrieve room details for the tenant",
+        operation_summary="Retrieve Room For tenant",
+        method="get",
+        tags=["room"],
+        responses={
+            200: openapi.Response(
+                description="Retrieve a room",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'property_id': openapi.Schema(type=openapi.TYPE_STRING),
+                        'location': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'location_id': openapi.Schema(type=openapi.TYPE_STRING),
+                                'region': openapi.Schema(type=openapi.TYPE_STRING),
+                                'district': openapi.Schema(type=openapi.TYPE_STRING),
+                                'ward': openapi.Schema(type=openapi.TYPE_STRING),
+                                'latitude': openapi.Schema(type=openapi.TYPE_STRING),
+                                'longitude': openapi.Schema(type=openapi.TYPE_STRING),
+                            }
+                        ),
+                        'images': openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(type=openapi.TYPE_STRING),
+                        ),
+                        'room_category': openapi.Schema(type=openapi.TYPE_STRING),
+                        'price': openapi.Schema(type=openapi.TYPE_STRING),
+                        'status': openapi.Schema(type=openapi.TYPE_STRING),
+                        'description': openapi.Schema(type=openapi.TYPE_STRING),
+                        'condition': openapi.Schema(type=openapi.TYPE_STRING),
+                        'nearby_facilities': openapi.Schema(type=openapi.TYPE_STRING),
+                        'utilities': openapi.Schema(type=openapi.TYPE_STRING),
+                        'security_features': openapi.Schema(type=openapi.TYPE_STRING),
+                        'heating_cooling_system': openapi.Schema(type=openapi.TYPE_STRING),
+                        'furnishing_status': openapi.Schema(type=openapi.TYPE_STRING),
+                        'is_locked': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        'listing_date': openapi.Schema(type=openapi.TYPE_STRING),
+                        'updated_at': openapi.Schema(type=openapi.TYPE_STRING),
+                    }
+                ),
+            ),
+            404: openapi.Response(
+                description="Not found",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            401: openapi.Response(
+                description="Unauthorized",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            500: openapi.Response(
+                description="Internal serevr error",
+                schema=DetailResponseSerializer(many=False)
+            ),
+        },
+    )
+    @action(detail=True, methods=['get'])
+    def room_detail(self, request: HttpRequest, pk: uuid.UUID=None):
+        """Retrieve a specific room by ID."""
+        try:
+            
+            room = Room.get_room_by_id(property_id=pk)
+            
+            if not room:
+                return Response({"detail": "Room not found"}, status=status.HTTP_404_NOT_FOUND)
+            serializer = ResponseMyRoomSerializer(room, many=False)
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+          logger.error(f"Un expected error occured while getting house with id {pk}", exc_info=True)
+          return Response(data={"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+      
+    @swagger_auto_schema(
+        operation_description="List filtered rooms",
+        operation_summary="Filtered Rooms",
+        method="get",
+        tags=["room"],
+        responses={
+            200: openapi.Response(
+                description="A paginated list of rooms",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -343,9 +408,8 @@ class HouseViewSet(viewsets.ModelViewSet):
                                         type=openapi.TYPE_ARRAY,
                                         items=openapi.Schema(type=openapi.TYPE_STRING),
                                     ),
-                                    'category': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'room_category': openapi.Schema(type=openapi.TYPE_STRING),
                                     'price': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'title': openapi.Schema(type=openapi.TYPE_STRING),
                                     'description': openapi.Schema(type=openapi.TYPE_STRING),
                                     'condition': openapi.Schema(type=openapi.TYPE_STRING),
                                     'nearby_facilities': openapi.Schema(type=openapi.TYPE_STRING),
@@ -353,10 +417,7 @@ class HouseViewSet(viewsets.ModelViewSet):
                                     'security_features': openapi.Schema(type=openapi.TYPE_STRING),
                                     'heating_cooling_system': openapi.Schema(type=openapi.TYPE_STRING),
                                     'furnishing_status': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'total_bed_room': openapi.Schema(type=openapi.TYPE_INTEGER),
-                                    'total_dining_room': openapi.Schema(type=openapi.TYPE_INTEGER),
-                                    'total_bath_room': openapi.Schema(type=openapi.TYPE_INTEGER),
-                                    'status': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'is_locked': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                                     'listing_date': openapi.Schema(type=openapi.TYPE_STRING),
                                     'updated_at': openapi.Schema(type=openapi.TYPE_STRING),
                                 }
@@ -376,10 +437,10 @@ class HouseViewSet(viewsets.ModelViewSet):
         },
         manual_parameters=[
             openapi.Parameter(
-                'category', openapi.IN_QUERY, 
-                description="Category of the house (e.g., Rental, Sale)", 
+                'room_category', openapi.IN_QUERY, 
+                description="Category of the rooms", 
                 type=openapi.TYPE_STRING,
-                enum=[category.value for category in CATEGORY]
+                enum=[category.value for category in ROOM_CATEGORY]
             ),
             openapi.Parameter(
                 'region', openapi.IN_QUERY, description="Region of the house location", type=openapi.TYPE_STRING
@@ -396,8 +457,8 @@ class HouseViewSet(viewsets.ModelViewSet):
         ]
     )
     @action(detail=False, methods=['get'])
-    def filter_houses(self, request: HttpRequest):
-        category: str = request.GET.get('category')
+    def room_filter(self, request: HttpRequest):
+        room_category: str = request.GET.get('roomCategory')
         region: str = request.GET.get('region')
         district: str = request.GET.get('district')
         min_price: str = request.GET.get('minPrice')
@@ -410,17 +471,17 @@ class HouseViewSet(viewsets.ModelViewSet):
             return Response({"detail": "Invalid price format."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            houses = House.house_filter(category=category, region=region, district=district, min_price=min_price, max_price=max_price)
+            houses = Room.room_filter(room_category=room_category, region=region, district=district, min_price=min_price, max_price=max_price)
             
             
             paginator = PageNumberPagination()
             
             page = paginator.paginate_queryset(houses, request)
             if page is not None:
-                serializer = ResponseHouseSerializer(page, many=True)
+                serializer = ResponseRoomSerializer(page, many=True)
                 return paginator.get_paginated_response(serializer.data)
 
-            serializer = ResponseHouseSerializer(houses, many=True)
+            serializer = ResponseRoomSerializer(houses, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except ValueError as e:
             logger.error(f"Validation error occurred: {e}", exc_info=True)
