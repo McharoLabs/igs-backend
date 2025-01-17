@@ -2,19 +2,18 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
-
-from account.models import SubscriptionPlan
-from user.models import Agent
 from django.db.models import QuerySet
 from django.db import transaction
 import logging
+
+from user.model.agent import Agent
 
 logger = logging.getLogger(__name__)
 
 class Account(models.Model):
     account_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     agent = models.ForeignKey(Agent, on_delete=models.SET_NULL, null=True, related_name="agent_account")
-    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.SET_NULL, null=True, blank=True)
+    plan = models.ForeignKey('account.SubscriptionPlan', on_delete=models.SET_NULL, null=True, blank=True)  # Use string-based reference
     start_date = models.DateTimeField(default=timezone.now)
     end_date = models.DateTimeField()
     is_active = models.BooleanField(default=True)
@@ -44,7 +43,6 @@ class Account(models.Model):
                 self.save()
                 logger.info(f"Account {self.account_id} expired and deactivated.")
 
-    
     def account_owner(self) -> str:
         """Returns the full name of the account owner (agent)"""
         if self.agent:
@@ -69,17 +67,19 @@ class Account(models.Model):
         return False
     
     @classmethod
-    def subscribe(cls, plan: SubscriptionPlan, agent: Agent) -> str:
+    def subscribe(cls, plan, agent):
         """Subscribe the plan and create a new account for the agent and deactivate the previous active account if found
 
         Args:
             plan (SubscriptionPlan): Subscription plan instance for the agent
-            agent (Agen): Agent for the subscribed account.
+            agent (Agent): Agent for the subscribed account.
 
         Returns:
             str: Success message for created account
         """
         
+        from account.models import SubscriptionPlan  # Lazy import inside method
+
         with transaction.atomic():
             current_active_account = cls.objects.filter(agent=agent, is_active=True).first()
 
@@ -99,7 +99,7 @@ class Account(models.Model):
         return f"You have subscribed to plan {account.plan}, the account expires on {str(account.end_date)}"
 
     @classmethod
-    def get_account(cls, agent: Agent) -> 'Account':
+    def get_account(cls, agent):
         """
         Retrieve the active account associated with either an agent. This method ensures that 
         only one of the two parameters (agent) is provided. If both are provided, 
