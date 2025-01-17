@@ -12,7 +12,6 @@ from user.models import Agent
 import logging
 from django.db.models.query import QuerySet
 from django.db.models import Q, Count
-from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 

@@ -19,6 +19,7 @@ class SubscriptionPlan(models.Model):
     
     class Meta:
         db_table = 'subscription_plan'
+        app_label = 'account'
 
     def __str__(self):
         return f"{self.name} - ${self.price} (Max {self.max_houses} Houses)"
@@ -56,6 +57,7 @@ class Account(models.Model):
     
     class Meta:
         db_table = 'account'
+        app_label = 'account'
 
     def save(self, *args, **kwargs):
         if not self.end_date and self.plan:
