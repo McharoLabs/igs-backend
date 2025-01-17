@@ -3,7 +3,7 @@ import uuid
 from django.db import models
 from django.apps import apps
 
-from account.model.account import Account
+from account.models import Account
 from house.enums.availability_status import STATUS
 from house.enums.category import CATEGORY
 from location.models import Location

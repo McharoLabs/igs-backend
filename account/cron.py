@@ -1,6 +1,6 @@
 import logging
 
-from account.model.account import Account
+from account.models import Account
 
 logger = logging.getLogger(__name__)
 

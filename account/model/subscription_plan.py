@@ -28,11 +28,11 @@ class SubscriptionPlan(models.Model):
         return cls.objects.filter(subscription_plan_id=subscription_plan_id).first()
 
     @classmethod
-    def get_all_plans(cls) -> 'QuerySet[SubscriptionPlan]':
+    def get_all_plans(cls) -> QuerySet['SubscriptionPlan']:
         """
         Retrieves all subscription plans from the database.
 
         Returns:
-            QuerySet[SubscriptionPlan]: A queryset containing all SubscriptionPlan objects.
+            QuerySet['SubscriptionPlan']: A queryset containing all SubscriptionPlan objects.
         """
         return cls.objects.all()
