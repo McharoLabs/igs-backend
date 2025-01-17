@@ -3,7 +3,7 @@ from django.db import models
 from django.utils import timezone
 from datetime import timedelta
 
-from account.model.subscription_plan import SubscriptionPlan
+from account.models import SubscriptionPlan
 from user.models import Agent
 from django.db.models import QuerySet
 from django.db import transaction

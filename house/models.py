@@ -1,1 +1,1 @@
-from .model.house import House
+from .model import *
