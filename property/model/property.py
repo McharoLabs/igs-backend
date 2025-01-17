@@ -33,6 +33,7 @@ class Property(models.Model):
     
     class Meta:
         db_table = 'property'
+        app_label = 'property'
 
     def __str__(self):
         return f"Property {self.property_id}"
