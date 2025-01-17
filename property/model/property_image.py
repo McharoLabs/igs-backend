@@ -13,6 +13,7 @@ class PropertyImage(models.Model):
     
     class Meta:
         db_table = 'images'
+        app_label = 'property'
     
     def __str__(self):
         return str(self.image_id)

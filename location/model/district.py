@@ -16,6 +16,7 @@ class District(models.Model):
 
     class Meta:
         db_table = 'district'
+        app_label = 'location'
         
     @classmethod
     def is_district_by_name_exists(cls, district_name: str) -> bool:

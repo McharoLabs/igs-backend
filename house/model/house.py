@@ -22,6 +22,7 @@ class House(Property):
 
     class Meta:
         db_table = 'house'
+        app_label = 'house'
     
     def mark_booked(self) -> None:
         """Update the status of the house to 'booked'."""

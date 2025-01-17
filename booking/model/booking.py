@@ -21,6 +21,7 @@ class Booking(models.Model):
 
     class Meta:
         db_table = 'booking'
+        app_label = 'booking'
         
     def __str__(self) -> str:
         return str(self.booking_id)

@@ -31,6 +31,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     class Meta:
         db_table = 'user'
+        app_label = 'user'
     
     @classmethod
     def is_email_exist(cls, email: str) -> bool:

@@ -17,6 +17,7 @@ class Room(Property):
     
     class Meta:
         db_table = 'room'
+        app_label = 'room'
         
     
     @classmethod
