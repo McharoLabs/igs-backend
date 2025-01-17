@@ -1,1 +1,168 @@
-from .model import *
+import uuid
+from django.db import models
+from django.utils import timezone
+from datetime import timedelta
+from django.db.models import QuerySet
+from django.db import transaction
+import logging
+
+from user.model.agent import Agent
+
+logger = logging.getLogger(__name__)
+
+class SubscriptionPlan(models.Model):
+    subscription_plan_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100, unique=True, help_text="e.g., 'Basic', 'Premium'")
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    max_houses = models.IntegerField()
+    duration_days = models.IntegerField(default=30)
+    
+    class Meta:
+        db_table = 'subscription_plan'
+
+    def __str__(self):
+        return f"{self.name} - ${self.price} (Max {self.max_houses} Houses)"
+    
+    @classmethod
+    def get_plan_by_id(cls, subscription_plan_id: uuid.UUID) -> 'SubscriptionPlan':
+        """Retrieve plan by subscription plan id
+
+        Args:
+            subscription_plan_id (uuid.UUID): Subscription plan id to find the plan
+
+        Returns:
+            SubscriptionPlan: Subscription plan instance if found, otherwise None
+        """
+        return cls.objects.filter(subscription_plan_id=subscription_plan_id).first()
+
+    @classmethod
+    def get_all_plans(cls) -> QuerySet['SubscriptionPlan']:
+        """
+        Retrieves all subscription plans from the database.
+
+        Returns:
+            QuerySet['SubscriptionPlan']: A queryset containing all SubscriptionPlan objects.
+        """
+        return cls.objects.all()
+
+
+class Account(models.Model):
+    account_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    agent = models.ForeignKey(Agent, on_delete=models.SET_NULL, null=True, related_name="agent_account")
+    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.SET_NULL, null=True, blank=True)  # Use string-based reference
+    start_date = models.DateTimeField(default=timezone.now)
+    end_date = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        db_table = 'account'
+
+    def save(self, *args, **kwargs):
+        if not self.end_date and self.plan:
+            if hasattr(self.plan, 'duration_days'):
+                self.end_date = self.start_date + timedelta(days=self.plan.duration_days)
+        super().save(*args, **kwargs)
+    
+    def __str__(self) -> str:
+        owner = self.account_owner()
+        plan_name = self.plan.name if self.plan else 'No Plan'
+        return f"Account for {owner} ({plan_name})"
+    
+    def expire_account(self) -> None:
+        """
+        Expires the account by setting `is_active` to False, only if the account is still active 
+        and the `end_date` is in the future.
+        """
+        if self.is_active:
+            if self.end_date <= timezone.now():
+                self.is_active = False
+                self.save()
+                logger.info(f"Account {self.account_id} expired and deactivated.")
+
+    def account_owner(self) -> str:
+        """Returns the full name of the account owner (agent)"""
+        if self.agent:
+            return f"{self.agent.first_name} {self.agent.middle_name} {self.agent.last_name}"
+        
+    def can_upload(self, total_property: int) -> bool:
+        """
+        Checks if the agent associated with this account can upload another house.
+        This is based on the account being active and the account's subscription plan allowing the upload 
+        of the specified number of houses.
+
+        Args:
+            total_property (int): The total number of houses the agent has already uploaded.
+
+        Returns:
+            bool: Returns True if the account is active and the number of uploaded houses is within the limit
+                specified by the account's subscription plan. Returns False otherwise.
+        """
+        if self.is_active and self.plan and total_property < self.plan.max_houses:
+            return True
+        
+        return False
+    
+    @classmethod
+    def subscribe(cls, plan: SubscriptionPlan, agent: Agent):
+        """Subscribe the plan and create a new account for the agent and deactivate the previous active account if found
+
+        Args:
+            plan (SubscriptionPlan): Subscription plan instance for the agent
+            agent (Agent): Agent for the subscribed account.
+
+        Returns:
+            str: Success message for created account
+        """
+        
+        with transaction.atomic():
+            current_active_account = cls.objects.filter(agent=agent, is_active=True).first()
+
+            if current_active_account:
+                current_active_account.is_active = False
+                current_active_account.save()
+
+            account = cls(
+                agent=agent,
+                plan=plan
+            )
+
+            account.save()
+
+            logger.info(f"Plan subscription for {agent}")
+        
+        return f"You have subscribed to plan {account.plan}, the account expires on {str(account.end_date)}"
+
+    @classmethod
+    def get_account(cls, agent: Agent):
+        """
+        Retrieve the active account associated with either an agent. This method ensures that 
+        only one of the two parameters (agent) is provided. If both are provided, 
+        a ValueError will be raised. If neither is provided, a ValueError will also be raised.
+
+        Args:
+            agent (Agent): The agent whose account is to be retrieved. Defaults to None.
+
+        Returns:
+            Account: The active `Account` associated with the given agent. If no active account 
+            is found, the method returns `None`.
+        """
+        
+        return cls.objects.filter(agent=agent, is_active=True).first()
+    
+    @classmethod
+    def get_active_accounts(cls) -> 'QuerySet[Account]':
+        """Retrieve all active accounts
+
+        Returns:
+            QuerySet[Account]: QuerySet of active account objects if found, otherwise None
+        """
+        return cls.objects.filter(is_active=True)
+    
+    @classmethod
+    def get_inactive_accounts(cls) -> 'QuerySet[Account]':
+        """Retrieve all inactive accounts
+
+        Returns:
+            QuerySet[Account]: QuerySet of inactive account objects if found, otherwise None
+        """
+        return cls.objects.filter(is_active=False)
