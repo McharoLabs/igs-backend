@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from account.models import Account, SubscriptionPlan
+from account.models import Account
+from subscription_plan.models import SubscriptionPlan
 
 class ResponseSubscriptionPlanSerailizer(serializers.ModelSerializer):
     class Meta:

@@ -2,7 +2,6 @@ from typing import cast
 from django.forms import ValidationError
 from django.http import HttpRequest
 from rest_framework import viewsets, permissions, status
-from account.models import SubscriptionPlan
 from account.serializers import ResponseSubscriptionPlanSerailizer, RequestSubscriptionSerializer
 from authentication.custom_permissions import IsAgent
 from rest_framework.response import Response
@@ -14,6 +13,7 @@ import logging
 from payment.enums.payment_type import PaymentType
 from payment.models import Payment
 from shared.serializer.detail_response_serializer import DetailResponseSerializer
+from subscription_plan.models import SubscriptionPlan
 from user.models import User, Agent
 
 

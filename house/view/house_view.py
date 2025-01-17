@@ -13,7 +13,8 @@ from house.models import House
 from house.serializers import RequestHouseSerializer, ResponseHouseSerializer, ResponseHouseDetailSerializer, ResponseMyHouseSerializer
 from location.models import District
 from location.models import Location
-from property.models import Property, PropertyImage
+from property.models import Property
+from property_images.models import PropertyImage
 from shared.seriaizers import DetailResponseSerializer
 import logging
 from rest_framework.pagination import PageNumberPagination

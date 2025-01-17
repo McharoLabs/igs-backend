@@ -1,6 +1,8 @@
 # admin.py
 from django.contrib import admin
-from .models import Account, SubscriptionPlan
+
+from subscription_plan.models import SubscriptionPlan
+from .models import Account
 
 class AccountAdmin(admin.ModelAdmin):
     list_display = ('account_id', 'agent', 'plan', 'start_date', 'end_date', 'is_active')

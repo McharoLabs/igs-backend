@@ -3,10 +3,11 @@ import logging
 import uuid
 from django.db import models
 from django.core.exceptions import ValidationError
-from account.models import SubscriptionPlan, Account
+from account.models import Account
 from payment.enums.payment_status import PaymentStatus
 from payment.enums.payment_type import PaymentType
 from property.models import Property
+from subscription_plan.models import SubscriptionPlan
 from user.models import Agent
 from utils.phone_number import validate_phone_number
 from django.utils import timezone
@@ -18,9 +19,9 @@ class Payment(models.Model):
     amount = models.DecimalField(max_digits=32, decimal_places=2)
     
     agent = models.ForeignKey(Agent, on_delete=models.RESTRICT, related_name="payments", null=True, blank=True)
-    plan = models.ForeignKey('account.SubscriptionPlan', on_delete=models.RESTRICT, related_name="payment", null=True, blank=True)
+    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.RESTRICT, related_name="payment", null=True, blank=True)
     
-    property = models.ForeignKey('property.Property', on_delete=models.RESTRICT, related_name="payments", null=True, blank=True)
+    property = models.ForeignKey(Property, on_delete=models.RESTRICT, related_name="payments", null=True, blank=True)
     
     phone_number = models.CharField(max_length=15, validators=[validate_phone_number], null=False)
     status = models.CharField(max_length=50, choices=PaymentStatus.choices(), default=PaymentStatus.default())

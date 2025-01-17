@@ -11,7 +11,8 @@ from drf_yasg import openapi
 from house.enums.room_category import ROOM_CATEGORY
 from location.models import District
 from location.models import Location
-from property.models import Property, PropertyImage
+from property.models import Property
+from property_images.models import PropertyImage
 from room.models import Room
 from room.serializers import RequestRoomSerializer, ResponseRoomSerializer, ResponseMyRoomSerializer
 from shared.seriaizers import DetailResponseSerializer
