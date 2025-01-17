@@ -29,10 +29,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = "phone_number"
     REQUIRED_FIELDS = ['first_name', 'last_name', 'email']
     
-    class Meta:
-        db_table = 'user'
-        app_label = 'user'
-    
     @classmethod
     def is_email_exist(cls, email: str) -> bool:
         """Method to check if te user exists in the database with given email

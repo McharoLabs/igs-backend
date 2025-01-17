@@ -5,9 +5,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Agent(User):
-    class meta:
-        db_table = 'agent'
-        app_label = 'user'
         
     def __str__(self) -> str:
         return f"{self.first_name} {self.middle_name} {self.last_name}"

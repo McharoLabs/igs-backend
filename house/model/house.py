@@ -19,10 +19,6 @@ class House(Property):
     total_bed_room = models.IntegerField(null=False)
     total_dining_room = models.IntegerField(null=False)
     total_bath_room = models.IntegerField(null=False)
-
-    class Meta:
-        db_table = 'house'
-        app_label = 'house'
     
     def mark_booked(self) -> None:
         """Update the status of the house to 'booked'."""
