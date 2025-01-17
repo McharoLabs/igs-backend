@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from igs_backend import settings
 from location.serializer.response_location_serializer import ResponseLocationSerializer
-from property.model import Property
+from property.models import Property
 
 
 class ResponsePropertySerializer(serializers.ModelSerializer):
