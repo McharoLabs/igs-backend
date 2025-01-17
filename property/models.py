@@ -34,6 +34,9 @@ class Property(models.Model):
     is_locked = models.BooleanField(default=False)
     listing_date = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'property'
 
     def __str__(self):
         return f"Property {self.property_id}"
@@ -122,6 +125,10 @@ class PropertyImage(models.Model):
     image_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, null=False)
     property = models.ForeignKey(Property, related_name='images', on_delete=models.CASCADE)
     image = models.ImageField(upload_to=upload_image_to, validators=[validate_image])
+    
+    class Meta:
+        db_table = 'images'
+        app_label = 'property'
     
     def __str__(self):
         return str(self.image_id)

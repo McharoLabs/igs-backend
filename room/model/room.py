@@ -15,6 +15,10 @@ from django.db.models import QuerySet, Q, Count
 class Room(Property):
     room_category = models.CharField(max_length=100, choices=ROOM_CATEGORY.choices(), default=ROOM_CATEGORY.default(), null=False, blank=False)
     
+    class Meta:
+        db_table = 'room'
+        app_label = 'room'
+    
     @classmethod
     def save_room(cls, agent: Agent, location: Location, price: str, description: str, condition: str,
              nearby_facilities: str, utilities: str, security_features: str, heating_cooling_system: str,

@@ -16,6 +16,10 @@ class SubscriptionPlan(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     max_houses = models.IntegerField()
     duration_days = models.IntegerField(default=30)
+    
+    class Meta:
+        db_table = 'subscription_plan'
+        app_label = 'account'
 
     def __str__(self):
         return f"{self.name} - ${self.price} (Max {self.max_houses} Houses)"
@@ -50,6 +54,10 @@ class Account(models.Model):
     start_date = models.DateTimeField(default=timezone.now)
     end_date = models.DateTimeField()
     is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        db_table = 'account'
+        app_label = 'account'
 
     def save(self, *args, **kwargs):
         if not self.end_date and self.plan:

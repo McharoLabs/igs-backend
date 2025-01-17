@@ -11,6 +11,10 @@ class Region(models.Model):
 
     def __str__(self) -> str:
         return str(self.name)
+
+    class Meta:
+        db_table = 'region'
+        app_label = 'location'
         
     @classmethod
     def is_region_by_name_exists(cls, region_name: str) -> bool:

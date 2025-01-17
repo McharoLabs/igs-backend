@@ -18,6 +18,10 @@ class Booking(models.Model):
     booking_fee = models.DecimalField(max_digits=32, decimal_places=2, null=False, blank=False)
     has_owner_read = models.BooleanField(default=False)
     listing_date = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        db_table = 'booking'
+        app_label = 'booking'
         
     def __str__(self) -> str:
         return str(self.booking_id)

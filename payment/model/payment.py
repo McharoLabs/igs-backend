@@ -36,6 +36,10 @@ class Payment(models.Model):
         self.consumed_at = timezone.now()
         self.status = PaymentStatus.COMPLETED
         self.save()
+
+    class Meta:
+        db_table = 'payment'
+        app_label = 'payment'
         
     def __str__(self) -> str:
         return str(self.payment_id)

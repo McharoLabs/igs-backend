@@ -13,6 +13,10 @@ class Location(models.Model):
     latitude = models.DecimalField(max_digits=11, decimal_places=8)
     longitude = models.DecimalField(max_digits=11, decimal_places=8)
 
+    class Meta:
+        db_table = 'location'
+        app_label = 'location'
+
     def __str__(self) -> str:
         return f'{self.district} {self.ward}, {self.region}'
 
