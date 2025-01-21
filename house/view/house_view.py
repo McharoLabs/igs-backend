@@ -18,8 +18,8 @@ from property_images.models import PropertyImage
 from shared.seriaizers import DetailResponseSerializer
 import logging
 from rest_framework.pagination import PageNumberPagination
-from django.db import transaction
-from django.core.exceptions import PermissionDenied
+from django.db import transaction, DatabaseError
+from django.core.exceptions import PermissionDenied, ValidationError
 
 from user.models import Agent
 from user.models import User
@@ -134,7 +134,18 @@ class HouseViewSet(viewsets.ModelViewSet):
 
                 response_serializer = DetailResponseSerializer({"detail": "House uploaded successful"})
                 return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+        except ValidationError as e:
+            logger.error(f"Validation error: {e}", exc_info=True)
+            return Response({"detail": e.message}, status=status.HTTP_400_BAD_REQUEST)
 
+        except PermissionDenied as e:
+            logger.warning(f"Permission error: {e}", exc_info=True)
+            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+
+        except DatabaseError as e:
+            logger.critical(f"Database error: {e}", exc_info=True)
+            return Response({"detail": "A database error occurred. Please try again later."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
         except ValueError as e:
             logger.error(f"Validation error occurred: {e}", exc_info=True)
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)

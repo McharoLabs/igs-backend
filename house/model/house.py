@@ -2,6 +2,7 @@ from decimal import Decimal, InvalidOperation
 import uuid
 from django.db import models
 from django.apps import apps
+from django.core.exceptions import PermissionDenied
 
 from account.models import Account
 from house.enums.availability_status import STATUS
@@ -76,12 +77,12 @@ class House(Property):
         account = Account.get_account(agent=agent)
         
         if account is None:
-            raise ValueError("You do not have active account, activate your account to continue")
+            raise PermissionDenied("You do not have active account, activate your account to continue")
 
         total_properties = cls.total_properties_for_agent(agent=agent)
         
         if not account.can_upload(total_property=total_properties):
-            raise ValueError("You have reached your maximum house upload limit.")
+            raise PermissionDenied("You have reached your maximum house upload limit.")
         
         if not CATEGORY.valid(category=category):
             raise ValueError(f"Invalid category '{category}'. Valid options are {', '.join([choice[0] for choice in CATEGORY.choices()])}.")
