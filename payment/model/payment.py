@@ -86,6 +86,19 @@ class Payment(models.Model):
                         raise e
                 
             self.save(update_fields=['reference', 'payment_status'])
+            
+    @classmethod
+    def get_payment_for_callback(cls, payment_id: uuid.UUID, order_id: str) -> 'Payment | None':
+        """Retrieve payment for the webhook
+
+        Args:
+            payment_id (uuid.UUID): Payment ID to filter the payment instance
+            order_id (str): Order ID from initiated payment for filtering the payment instance
+
+        Returns:
+            Payment | None: Payment instance if found, otherwise None
+        """
+        return cls.objects.filter(payment_id=payment_id, order_id=order_id).first()
 
     @classmethod
     def create(
