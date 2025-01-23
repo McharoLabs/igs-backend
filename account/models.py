@@ -69,7 +69,7 @@ class Account(models.Model):
         return False
     
     @classmethod
-    def subscribe(cls, plan: SubscriptionPlan, agent: Agent):
+    def subscribe(cls, plan: SubscriptionPlan, agent: Agent) -> None:
         """Subscribe the plan and create a new account for the agent and deactivate the previous active account if found
 
         Args:
@@ -95,8 +95,6 @@ class Account(models.Model):
             account.save()
 
             logger.info(f"Plan subscription for {agent}")
-        
-        return f"You have subscribed to plan {account.plan}, the account expires on {str(account.end_date)}"
 
     @classmethod
     def get_account(cls, agent: Agent):

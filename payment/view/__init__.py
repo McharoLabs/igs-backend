@@ -1,1 +1,1 @@
-from .payment_view import PaymentViewSet
+from .payment_view import PaymentWebHook

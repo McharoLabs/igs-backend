@@ -1,6 +1,8 @@
 from typing import cast
 from django.forms import ValidationError
 from django.http import HttpRequest
+from requests import HTTPError, Timeout
+import requests
 from rest_framework import viewsets, permissions, status
 from account.serializers import ResponseSubscriptionPlanSerailizer, RequestSubscriptionSerializer
 from authentication.custom_permissions import IsAgent
@@ -10,11 +12,14 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 import logging
 
+from igs_backend import settings
 from payment.enums.payment_type import PaymentType
 from payment.models import Payment
 from shared.serializer.detail_response_serializer import DetailResponseSerializer
 from subscription_plan.models import SubscriptionPlan
 from user.models import User, Agent
+from utils.http_client import HttpClient
+from django.db import transaction
 
 
 
@@ -96,33 +101,81 @@ class SubscriptionPlanViewSet(viewsets.ModelViewSet):
         },
     )
     @action(detail=False, methods=['post'])
+    @transaction.atomic(savepoint=False)
     def subscribe(self, request: HttpRequest):
         request_serializer = RequestSubscriptionSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
         validated_data = request_serializer.validated_data
-        
+
         user = cast(User, request.user)
         
-        
         try:
-            agent = Agent.get_agent_by_phone_number(phone_number=user.phone_number)
-            plan = SubscriptionPlan.get_plan_by_id(subscription_plan_id=validated_data.get("plan_id"))
-            
-            if agent is None:
-                return Response(data={"detail": "You are forbidden to view this information"}, status=status.HTTP_404_NOT_FOUND)
-            
-            if plan is None:
-                return Response(data={"detail": "Subscription plan not found"}, status=status.HTTP_404_NOT_FOUND)
-            
-            payment = Payment.create(
-                phone_number=validated_data.get("phone_number"), 
-                payment_type=PaymentType.ACCOUNT, 
-                amount=plan.price, 
-                agent=agent, 
-                plan=plan
-            )
-            
-            return Response(data={"detail": f"Successfully subscribed to {plan.name}, please finish your payment to activate account"}, status=status.HTTP_200_OK)
+            with transaction.atomic(): 
+                agent = Agent.get_agent_by_phone_number(phone_number=user.phone_number)
+                plan = SubscriptionPlan.get_plan_by_id(subscription_plan_id=validated_data.get("plan_id"))
+
+                if agent is None:
+                    return Response(data={"detail": "You are forbidden to view this information"}, status=status.HTTP_404_NOT_FOUND)
+
+                if plan is None:
+                    return Response(data={"detail": "Subscription plan not found"}, status=status.HTTP_404_NOT_FOUND)
+
+                # Create a payment entry in the database
+                payment = Payment.create(
+                    phone_number=validated_data.get("phone_number"),
+                    payment_type=PaymentType.ACCOUNT,
+                    amount=plan.price,
+                    agent=agent,
+                    plan=plan
+                )
+
+                
+                phone_number: str = payment.phone_number
+                
+                if phone_number.startswith('+255'):
+                    phone_number = '0' + phone_number[4:]
+                    
+                order_data = {
+                    'create_order': str(payment.payment_id),
+                    'buyer_email': payment.agent.email,
+                    'buyer_name': f"{payment.agent.first_name} {payment.agent.middle_name} {payment.agent.last_name}",
+                    'buyer_phone': phone_number,
+                    'amount': int(payment.amount),
+                    'account_id': settings.ACCOUNT_ID,
+                    'api_key': settings.API_KEY,
+                    'secret_key': settings.KEY,
+                }
+
+                try:
+                    client = HttpClient(base_url=settings.EXTERNAL_API_BASE_URL)
+                    response = client.make_payment(data=order_data)
+                    
+                    logger.info(f"Plan subscription for {payment.agent} with response: {response.text}")
+
+                    if response.status_code == 200:
+                        response_data = response.json()
+                        response_status: str = response_data.get("status")
+                        
+                        if response_status.lower() == "error":
+                            payment.delete()
+                            return Response(data={"detail": response_data.get("message")}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        payment.update_order_and_message(order_id=response_data.get("order_id"), message=response_data.get("message"))
+                        return Response(data={"detail": f"Successfully subscribed to {plan.name}, please finish your payment to activate account"}, status=status.HTTP_200_OK)
+                except requests.RequestException as e:
+                    logger.error(f"HTTP error occurred: {e}", exc_info=True)
+                    payment.delete()
+                    return Response({"detail": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
+                except requests.Timeout as e:
+                    logger.error(f"Request timeout occurred: {e}", exc_info=True)
+                    payment.delete()
+                    return Response({"detail": str(e)}, status=status.HTTP_504_GATEWAY_TIMEOUT)
+                except Exception as e:
+                    logger.error(f"Unexpected error occurred: {e}", exc_info=True)
+                    payment.delete()
+                    return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        
         except ValueError as e:
             logger.error(f"Value error occurred: {e}", exc_info=True)
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)

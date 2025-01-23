@@ -11,6 +11,7 @@ from subscription_plan.models import SubscriptionPlan
 from user.models import Agent
 from utils.phone_number import validate_phone_number
 from django.utils import timezone
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,10 @@ class Payment(models.Model):
     phone_number = models.CharField(max_length=15, validators=[validate_phone_number], null=False)
     status = models.CharField(max_length=50, choices=PaymentStatus.choices(), default=PaymentStatus.default())
     payment_type = models.CharField(max_length=100, choices=PaymentType.choices(), default=PaymentType.default())
+    order_id = models.CharField(max_length=255, null=True)
+    message = models.CharField(max_length=255, null=True)
+    payment_status = models.CharField(null=True, max_length=100)
+    reference = models.CharField(null=True, max_length=100)
     payment_date = models.DateTimeField(auto_now_add=True)
     
     is_consumed = models.BooleanField(default=False) 
@@ -45,39 +50,42 @@ class Payment(models.Model):
         
     def __str__(self) -> str:
         return str(self.payment_id)
-        
-    def activate_account(self) -> None:
-        try:
-            if not hasattr(self, "_called_from_activate_account"):
-                self._called_from_activate_account = True
-
-                account = Account.subscribe(plan=self.plan, agent=self.agent)
-                self.mark_as_consumed()
-
-                del self._called_from_activate_account 
-            else:
-                raise ValueError("Activation already triggered within the same context. Preventing recursion.")
-        except ValueError as e:
-            raise e
     
-    @classmethod
-    def auto_mark_property_booked(cls) -> None:
-        payments = cls.objects.filter(is_consumed=False)
+    def update_order_and_message(self, order_id: str, message: str) -> None:
+        """Update payment by inserting order id and message from the payment gateway after initializing the request
 
-        if payments:
-            for payment in payments:
-                if payment.payment_type == PaymentType.BOOKING.value:
-                    payment.property.mark_booked()
-                    payment.mark_as_consumed()
+        Args:
+            order_id (str): Order ID from the payment gateway
+            message (str): Message from the payment gateway
+        """
+        self.order_id = order_id
+        self.message = message
+        self.save(update_fields=['order_id', 'message'])
         
-    @classmethod
-    def auto_activate_account(cls) -> None:
-        payments = cls.objects.filter(is_consumed=False)
+    def on_complete_payment(self, *, payment_status: str, reference: str) -> None:
+        """Update payment by inserting payment status and reference from the payment gateway on webhook call
+
+        Args:
+            payment_status (str): Payment status from the payment gateway
+            reference (str): Payment reference from the payment gateway
+        """
+        self.payment_status = payment_status
+        self.reference = reference
         
-        if payments:
-            logger.info(f"trying to activate account: {[payment for payment in payments]}")
-            for payment in payments:
-                payment.activate_account()
+        with transaction.atomic():
+            if payment_status.upper() == 'COMPLETED':
+                if self.agent is None:
+                    self.property.mark_booked()
+                    self.mark_as_consumed()
+                elif self.agent:
+                    try:
+                        Account.subscribe(plan=self.plan, agent=self.agent)
+                        self.mark_as_consumed()
+                    except ValueError as e:
+                        logger.error(f"An error occured: {e}", exc_info=True)
+                        raise e
+                
+            self.save(update_fields=['reference', 'payment_status'])
 
     @classmethod
     def create(
