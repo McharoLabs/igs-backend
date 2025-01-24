@@ -71,6 +71,18 @@ class Property(models.Model):
         return cls.objects.filter(property_id=property_id).first()
     
     @classmethod
+    def get_property_for_booking(cls, property_id: uuid.UUID) -> 'Property | None':
+        """Class method to retrieve property instance
+
+        Args:
+            property_id (uuid.UUID): Unique property id to retrieve the instance
+
+        Returns:
+            Property | None: Instance of property that matches the property ID if found, otherwise None
+        """
+        return cls.objects.filter(property_id=property_id, status=STATUS.AVAILABLE).first()
+    
+    @classmethod
     def get_agent_property_by_id(cls, agent: Agent, property_id: uuid.UUID) -> 'Property | None':
         """Class method to retrieve property for the given agent and property ID
 
