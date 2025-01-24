@@ -103,7 +103,7 @@ class BookingViewSet(viewsets.ModelViewSet):
                     'buyer_email': validated_data.get('customer_email'),
                     'buyer_name': validated_data.get('customer_name'),
                     'buyer_phone': phone_number,
-                    'amount': int(payment.amount),
+                    'amount': float(payment.amount),
                     'account_id': settings.ACCOUNT_ID,
                     'webhook_url': f"{settings.APP_BASE}{settings.WEB_HOOK_URL}",
                     'metadata': json.dumps({

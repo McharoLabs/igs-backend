@@ -1,7 +1,6 @@
-import json
 import requests
 from requests import Response
-from requests.exceptions import HTTPError, Timeout, RequestException
+from requests.exceptions import Timeout, RequestException
 from typing import Optional, Dict, Any, Union
 from tenacity import retry, stop_after_attempt, wait_exponential
 import logging
@@ -33,7 +32,7 @@ class HttpClient:
         self,
         url: Optional[str] = None,
         data: Optional[Union[Dict[str, Any], str]] = None,
-    ) -> Response:
+    ) -> Response | None:
         url = f"{self.base_url}/{url}" if url else self.base_url
         try:
             response: Response = requests.post(url=url, data=data, timeout=self.timeout)
@@ -53,7 +52,7 @@ class HttpClient:
         wait=wait_exponential(multiplier=1, min=1, max=10),
         retry=(lambda retry_state: isinstance(retry_state.outcome.exception(), Timeout))
     )
-    def check_order_status(self, order_id: str)  -> Response:
+    def check_order_status(self, order_id: str)  -> Response | None:
         status_data = {
             'order_id': order_id,
             'api_key': settings.ZENOPAY_API_KEY,
@@ -66,6 +65,7 @@ class HttpClient:
                 data=status_data,
                 timeout=self.timeout
             )
+            logger.info(f"Satus check response: {response.text}")
             response.raise_for_status()
             return response
         except RequestException as e:
