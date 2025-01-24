@@ -61,7 +61,7 @@ class PaymentWebHook(APIView):
                         if Decimal(payment.amount) != Decimal(sc_amount):
                             return HttpResponse("Amount from order check status did not match with previous saved order amount", 400)
                         
-                        Payment.on_complete_payment(payment_status=sc_payment_status, reference=wh_reference)
+                        payment.on_complete_payment(payment_status=sc_payment_status, reference=wh_reference)
                         logger.info(f"Payment made successful for {payment}")
                         return HttpResponse("Success", 200)
                     
