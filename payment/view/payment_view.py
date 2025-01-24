@@ -13,8 +13,10 @@ from requests.exceptions import RequestException, Timeout, ConnectionError
 from django.core.exceptions import ValidationError
 from rest_framework.exceptions import APIException
 import logging
+from decimal import Decimal
 
 logger = logging.getLogger(__name__)
+
 
 class PaymentWebHook(APIView):
     permission_classes = [permissions.AllowAny]
@@ -56,7 +58,7 @@ class PaymentWebHook(APIView):
                         if payment is None:
                             return HttpResponse(f"Order with id {order_id} not found", 400)
                         
-                        if Double(payment.amount) != Double(sc_amount):
+                        if Decimal(payment.amount) != Decimal(sc_amount):
                             return HttpResponse("Amount from order check status did not match with previous saved order amount", 400)
                         
                         Payment.on_complete_payment(payment_status=sc_payment_status, reference=wh_reference)
