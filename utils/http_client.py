@@ -32,7 +32,7 @@ class HttpClient:
         self,
         url: Optional[str] = None,
         data: Optional[Union[Dict[str, Any], str]] = None,
-    ) -> Response | None:
+    ) -> Response:
         url = f"{self.base_url}/{url}" if url else self.base_url
         try:
             response: Response = requests.post(url=url, data=data, timeout=self.timeout)
@@ -52,7 +52,7 @@ class HttpClient:
         wait=wait_exponential(multiplier=1, min=1, max=10),
         retry=(lambda retry_state: isinstance(retry_state.outcome.exception(), Timeout))
     )
-    def check_order_status(self, order_id: str)  -> Response | None:
+    def check_order_status(self, order_id: str)  -> Response:
         status_data = {
             'order_id': order_id,
             'api_key': settings.ZENOPAY_API_KEY,
