@@ -1,4 +1,6 @@
 import json
+from typing import cast
+import uuid
 from django.http import HttpRequest
 import requests
 from rest_framework import viewsets, permissions, status
@@ -8,15 +10,17 @@ from rest_framework.decorators import action
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from booking.models import Booking
+from booking.serializers import ResponseBookingSerailizer
 from booking.serializers import  RequestBookingSerializer
 from igs_backend import settings
 from payment.enums.payment_type import PaymentType
 from payment.models import Payment
 from property.models import Property
 from shared.seriaizers import DetailResponseSerializer
+from rest_framework.pagination import PageNumberPagination
 import logging
-from django.core.exceptions import ValidationError
 
+from user.model.user import User
 from utils.http_client import HttpClient
 
 
@@ -32,7 +36,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         """
         Custom method to define permissions for each action.
         """
-        agent_actions = {'booked_rooms'}
+        agent_actions = {'booked_rooms', 'agent_booked_properties', 'agent_booked_property'}
 
         if self.action in agent_actions:
             permission_classes = [permissions.IsAuthenticated, IsAgent]
@@ -43,6 +47,192 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Booking.objects.none()
+    
+    
+    @swagger_auto_schema(
+        operation_description="Retrieve agent booked properties for the authorized agent",
+        operation_summary="Retrieve booked properties for an agent",
+        method="get",
+        tags=["booking"],
+        responses={
+            200: openapi.Response(
+                description="Agent's booked properties",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'booking_id': openapi.Schema(type=openapi.TYPE_STRING),
+                        'property': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'property_id': openapi.Schema(type=openapi.TYPE_STRING),
+                                'category': openapi.Schema(type=openapi.TYPE_STRING),
+                                'price': openapi.Schema(type=openapi.TYPE_STRING),
+                                'description': openapi.Schema(type=openapi.TYPE_STRING),
+                                'condition': openapi.Schema(type=openapi.TYPE_STRING),
+                                'nearby_facilities': openapi.Schema(type=openapi.TYPE_STRING),
+                                'utilities': openapi.Schema(type=openapi.TYPE_STRING),
+                                'security_features': openapi.Schema(type=openapi.TYPE_STRING),
+                                'furnishing_status': openapi.Schema(type=openapi.TYPE_STRING),
+                                'location': openapi.Schema(
+                                    type=openapi.TYPE_OBJECT,
+                                    properties={
+                                        'location_id': openapi.Schema(type=openapi.TYPE_STRING),  # UUID
+                                        'region': openapi.Schema(type=openapi.TYPE_STRING),
+                                        'district': openapi.Schema(type=openapi.TYPE_STRING),
+                                        'ward': openapi.Schema(type=openapi.TYPE_STRING),
+                                        'latitude': openapi.Schema(type=openapi.TYPE_STRING),
+                                        'longitude': openapi.Schema(type=openapi.TYPE_STRING),
+                                    }
+                                ),
+                                'images': openapi.Schema(
+                                    type=openapi.TYPE_ARRAY,
+                                    items=openapi.Schema(type=openapi.TYPE_STRING),
+                                ),
+                            }
+                        ),
+                        'customer_name': openapi.Schema(type=openapi.TYPE_STRING),
+                        'customer_email': openapi.Schema(type=openapi.TYPE_STRING),
+                        'customer_phone_number': openapi.Schema(type=openapi.TYPE_STRING),
+                        'has_owner_read': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        'listing_date': openapi.Schema(type=openapi.TYPE_STRING),
+                    }
+                ),
+            ),
+            401: openapi.Response(
+                description="Unauthorized",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'detail': openapi.Schema(type=openapi.TYPE_STRING),
+                    }
+                ),
+            ),
+            404: openapi.Response(
+                description="Booking not found",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'detail': openapi.Schema(type=openapi.TYPE_STRING),
+                    }
+                ),
+            ),
+            500: openapi.Response(
+                description="Internal server error",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'detail': openapi.Schema(type=openapi.TYPE_STRING),
+                    }
+                ),
+            ),
+        },
+    )
+    @action(detail=True, methods=['get'])
+    def agent_booked_property(self, request: HttpRequest, pk: uuid.UUID):
+        user = cast(User, request.user)
+
+        try:
+            booked_property: Booking | None = Booking.get_booked_property(booking_id=pk, agent=user)
+            
+            if booked_property is None:
+                return Response(data={"detail": "No booking found"}, status=status.HTTP_404_NOT_FOUND)
+            
+            response_serializer = ResponseBookingSerailizer(booked_property, many=False)
+            return Response(data=response_serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"An error occurred during fetching agent booked properties: {e}", exc_info=True)
+            return Response(data={"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @swagger_auto_schema(
+        operation_description="Retrieve agent booked properties, authorized agent",
+        operation_summary="Retrieve authorized agent booked properties",
+        method="get",
+        tags=["booking"],
+        responses={
+            200: openapi.Response(
+                description="A list of agent's booked properties",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'count': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'next': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
+                        'previous': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
+                        'results': openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(
+                                type=openapi.TYPE_OBJECT,
+                                properties={
+                                    'booking_id': openapi.Schema(type=openapi.TYPE_STRING),  # UUID of the booking
+                                    'property': openapi.Schema(
+                                        type=openapi.TYPE_OBJECT,
+                                        properties={
+                                            'property_id': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'category': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'price': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'description': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'condition': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'nearby_facilities': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'utilities': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'security_features': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'furnishing_status': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'location': openapi.Schema(
+                                                type=openapi.TYPE_OBJECT,
+                                                properties={
+                                                    'location_id': openapi.Schema(type=openapi.TYPE_STRING),  # UUID
+                                                    'region': openapi.Schema(type=openapi.TYPE_STRING),
+                                                    'district': openapi.Schema(type=openapi.TYPE_STRING),
+                                                    'ward': openapi.Schema(type=openapi.TYPE_STRING),
+                                                    'latitude': openapi.Schema(type=openapi.TYPE_STRING),
+                                                    'longitude': openapi.Schema(type=openapi.TYPE_STRING),
+                                                }
+                                            ),
+                                            'images': openapi.Schema(
+                                                type=openapi.TYPE_ARRAY,
+                                                items=openapi.Schema(type=openapi.TYPE_STRING),
+                                            ),
+                                        }
+                                    ),
+                                    'customer_name': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'customer_email': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'customer_phone_number': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'has_owner_read': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                    'listing_date': openapi.Schema(type=openapi.TYPE_STRING),
+                                }
+                            )
+                        )
+                    }
+                ),
+            ),
+            401: openapi.Response(
+                description="Unauthorized",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            500: openapi.Response(
+                description="Internal server error",
+                schema=DetailResponseSerializer(many=False)
+            ),
+        }
+    )
+    @action(detail=False, methods=['get'])
+    def agent_booked_properties(self, request: HttpRequest):
+        user = cast(User, request.user)
+        
+        try:
+            booked_properties = Booking.get_booked_properties(agent=user)
+            
+            paginator = PageNumberPagination()
+            page = paginator.paginate_queryset(booked_properties, request)
+
+            if page is not None:
+                response_serializer = ResponseBookingSerailizer(page, many=True)
+                return paginator.get_paginated_response(response_serializer.data)
+            
+            response_serializer = ResponseBookingSerailizer(booked_properties, many=True)
+            return Response(data=response_serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"An error occured during fetching agent booked properties: {e}", exc_info=True)
+            return Response(data={"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     
     @swagger_auto_schema(
         operation_description="Make booking by providong necessary information such as property ID and tenant phoe number",

@@ -4,6 +4,7 @@ import uuid
 from django.db import models
 from django.core.exceptions import ValidationError
 from account.models import Account
+from booking.models import Booking
 from payment.enums.payment_status import PaymentStatus
 from payment.enums.payment_type import PaymentType
 from property.models import Property
@@ -62,7 +63,7 @@ class Payment(models.Model):
         self.message = message
         self.save(update_fields=['order_id', 'message'])
         
-    def on_complete_payment(self, *, payment_status: str, reference: str) -> None:
+    def on_complete_payment(self, *, payment_status: str, reference: str, customer_name: str = None, customer_email: str = None) -> None:
         """Update payment by inserting payment status and reference from the payment gateway on webhook call
 
         Args:
@@ -77,6 +78,12 @@ class Payment(models.Model):
                 if self.agent is None:
                     self.property.mark_booked()
                     self.mark_as_consumed()
+                    Booking.save_booking(
+                            property=self.property, 
+                            customer_name=customer_name, 
+                            customer_email=customer_email, 
+                            customer_phone_number=self.phone_number
+                        )
                 elif self.agent:
                     try:
                         Account.subscribe(plan=self.plan, agent=self.agent)

@@ -11,17 +11,21 @@ class ResponsePropertySerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Property
-        fields = ['category', 'price', 'description', 'condition', 'nearby_facilities', 'utilities', 
+        fields = ['property_id', 'category', 'price', 'description', 'condition', 'nearby_facilities', 'utilities', 
                   'security_features', 'furnishing_status', 'location', 'images']
-        
+    
     def get_images(self, obj):
         images = obj.images.all()
-        
         image_urls = []
-        base_url = settings.PROPERTY_IMAGE_BASE_URL
-        
+
+        base_url = settings.PROPERTY_IMAGE_BASE_URL 
+
         for image in images:
             image_id = image.image_id
+            
             image_url = f"{base_url}/{image_id}/"
+            
             image_urls.append(image_url)
+
+        return image_urls
         

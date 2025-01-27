@@ -10,12 +10,16 @@ from house.enums.availability_status import STATUS
 
 import logging
 
+from utils.phone_number import validate_phone_number
+
 logger = logging.getLogger(__name__)
 
 class Booking(models.Model):
     booking_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     property = models.ForeignKey(Property, on_delete=models.RESTRICT, related_name="bookings", null=False)
-    booking_fee = models.DecimalField(max_digits=32, decimal_places=2, null=False, blank=False)
+    customer_name = models.CharField(max_length=100, null=False, blank=False)
+    customer_email = models.CharField(max_length=100, null=False, blank=False)
+    customer_phone_number = models.CharField(max_length=20, null=False, validators=[validate_phone_number], blank=False)
     has_owner_read = models.BooleanField(default=False)
     listing_date = models.DateTimeField(default=timezone.now, editable=False)
 
@@ -64,15 +68,26 @@ class Booking(models.Model):
         Returns:
             QuerySet[Booking]: Filtered queryset of house bookings.
         """
-        return cls.objects.filter(property__status=STATUS.BOOKED.value, property__agent=agent)
+        return cls.objects.filter(property__status=STATUS.BOOKED.value, property__agent=agent).order_by('-listing_date')
         
     @classmethod
-    def save(cls, property: Property, booking_fee: Decimal) -> str:
+    def save_booking(cls, property: Property, customer_name: str, customer_email: str, customer_phone_number: str) -> None:
+        """Save booking details to the database besically after payments completed
+
+        Args:
+            property (Property): Property instance booked
+            customer_name (str): Customer name for the booking
+            customer_email (str): Customer email for the booking
+            customer_phone_number (str): Customer phone number for the booking
+
+        Returns:
+            Booking: Saved booking instance
+        """
         booking = cls(
             property=property,
-            booking_fee=booking_fee,
+            customer_name=customer_name,
+            customer_email=customer_email,
+            customer_phone_number=customer_phone_number
         )
 
         booking.save()
-
-        return booking
