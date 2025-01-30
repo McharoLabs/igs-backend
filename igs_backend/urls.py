@@ -47,7 +47,7 @@ urlpatterns = [
     path('api/v2/account/', include('account.urls')),
     path('api/v2/property/', include('property.urls')),
     path('api/v2/room/', include('room.urls')),
-    path('api/v2/message/', include('message.urls')),
+    # path('api/v2/message/', include('message.urls')),
 ]
 
 # if settings.DEBUG:
