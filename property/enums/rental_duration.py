@@ -1,0 +1,16 @@
+from enum import Enum
+from typing import List, Tuple
+
+class RENTAL_DURATION(Enum):
+    ONE_MONTH = "1 Month"
+    THREE_MONTHS = "3 Months"
+    SIX_MONTHS = "6 Months"
+    ONE_YEAR = "1 Year"
+
+    @classmethod
+    def choices(cls) -> List[Tuple[str, str]]:
+        return [(duration.value, duration.value) for duration in cls]
+
+    @classmethod
+    def default(cls) -> str:
+        return cls.ONE_MONTH.value

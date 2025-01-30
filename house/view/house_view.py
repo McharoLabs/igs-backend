@@ -111,7 +111,7 @@ class HouseViewSet(viewsets.ModelViewSet):
                     longitude=validated_data.get("longitude")
                 )
 
-                response = House.save_house(
+                saved_house = House.save_house(
                     location=location, 
                     description=validated_data.get("description"), 
                     price=validated_data.get("price"), 
@@ -125,18 +125,20 @@ class HouseViewSet(viewsets.ModelViewSet):
                     total_bath_room=validated_data.get("total_bath_room"),
                     total_bed_room=validated_data.get("total_bed_room"),
                     total_dining_room=validated_data.get("total_dining_room"),
+                    rental_duration=validated_data.get("rental_duration"),
                     agent=agent
                 )
                 
-                property = Property.get_property_by_id(property_id=response.property_id)
-                
+                property: Property | None = Property.get_property_by_id(property_id=saved_house.property_id)
+                            
                 PropertyImage.save(property=property, images=validated_data.get("images"))
 
                 response_serializer = DetailResponseSerializer({"detail": "House uploaded successful"})
                 return Response(response_serializer.data, status=status.HTTP_201_CREATED)
         except ValidationError as e:
             logger.error(f"Validation error: {e}", exc_info=True)
-            return Response({"detail": e.message}, status=status.HTTP_400_BAD_REQUEST)
+            error_message = getattr(e, 'message', None) or getattr(e, 'detail', None) or e
+            return Response({"detail": error_message}, status=status.HTTP_400_BAD_REQUEST)
 
         except PermissionDenied as e:
             logger.warning(f"Permission error: {e}", exc_info=True)
@@ -269,6 +271,7 @@ class HouseViewSet(viewsets.ModelViewSet):
                                     ),
                                     'category': openapi.Schema(type=openapi.TYPE_STRING),
                                     'price': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'rental_duration': openapi.Schema(type=openapi.TYPE_STRING),
                                     'description': openapi.Schema(type=openapi.TYPE_STRING),
                                     'condition': openapi.Schema(type=openapi.TYPE_STRING),
                                     'nearby_facilities': openapi.Schema(type=openapi.TYPE_STRING),
@@ -357,6 +360,7 @@ class HouseViewSet(viewsets.ModelViewSet):
                                     ),
                                     'category': openapi.Schema(type=openapi.TYPE_STRING),
                                     'price': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'rental_duration': openapi.Schema(type=openapi.TYPE_STRING),
                                     'title': openapi.Schema(type=openapi.TYPE_STRING),
                                     'description': openapi.Schema(type=openapi.TYPE_STRING),
                                     'condition': openapi.Schema(type=openapi.TYPE_STRING),

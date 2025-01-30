@@ -21,7 +21,7 @@ from rest_framework.pagination import PageNumberPagination
 import logging
 
 from user.model.user import User
-from utils.http_client import HttpClient
+from utils.http_client import PaymentHttpClient
 
 
 
@@ -67,6 +67,7 @@ class BookingViewSet(viewsets.ModelViewSet):
                                 'property_id': openapi.Schema(type=openapi.TYPE_STRING),
                                 'category': openapi.Schema(type=openapi.TYPE_STRING),
                                 'price': openapi.Schema(type=openapi.TYPE_STRING),
+                                'rental_duration': openapi.Schema(type=openapi.TYPE_STRING),
                                 'description': openapi.Schema(type=openapi.TYPE_STRING),
                                 'condition': openapi.Schema(type=openapi.TYPE_STRING),
                                 'nearby_facilities': openapi.Schema(type=openapi.TYPE_STRING),
@@ -169,6 +170,7 @@ class BookingViewSet(viewsets.ModelViewSet):
                                             'property_id': openapi.Schema(type=openapi.TYPE_STRING),
                                             'category': openapi.Schema(type=openapi.TYPE_STRING),
                                             'price': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'rental_duration': openapi.Schema(type=openapi.TYPE_STRING),
                                             'description': openapi.Schema(type=openapi.TYPE_STRING),
                                             'condition': openapi.Schema(type=openapi.TYPE_STRING),
                                             'nearby_facilities': openapi.Schema(type=openapi.TYPE_STRING),
@@ -305,7 +307,7 @@ class BookingViewSet(viewsets.ModelViewSet):
                     'secret_key': settings.ZENOPAY_SECRET_KEY,
                 }
 
-            client = HttpClient(base_url=settings.ZENOPAY_BASE)
+            client = PaymentHttpClient(base_url=settings.ZENOPAY_BASE)
             response = client.make_payment(data=order_data)
 
             if response is None:
@@ -315,7 +317,7 @@ class BookingViewSet(viewsets.ModelViewSet):
 
             if response.status_code == 200:
                 response_data = response.json()
-                response_status = response_data.get("status")
+                response_status: str = response_data.get("status")
 
                 if response_status.lower() == "error":
                     payment.delete() 

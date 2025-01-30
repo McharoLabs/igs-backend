@@ -22,7 +22,7 @@ class Room(Property):
     @classmethod
     def save_room(cls, agent: Agent, location: Location, price: str, description: str, condition: str,
              nearby_facilities: str, utilities: str, security_features: str, heating_cooling_system: str,
-             furnishing_status: str, room_category: str):
+             furnishing_status: str, room_category: str, rental_duration: str = None):
         """
         Save the Room instance and ensure all Property fields are passed and handled as parameters.
         
@@ -39,6 +39,7 @@ class Room(Property):
             heating_cooling_system (str): The heating/cooling system of the property.
             furnishing_status (str): The furnishing status of the property.
             room_category (str): The room category (e.g., 'Bedroom').
+            rental_duration (str): Rental duration
 
         Returns:
             Room: The saved Room instance.
@@ -69,6 +70,7 @@ class Room(Property):
             heating_cooling_system=heating_cooling_system,
             furnishing_status=furnishing_status,
             room_category=room_category,
+            rental_duration=rental_duration,
         )
 
         instance.save()

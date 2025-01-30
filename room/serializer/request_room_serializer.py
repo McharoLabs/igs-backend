@@ -5,10 +5,12 @@ from house.enums.furnishing_status import FURNISHING_STATUS
 from house.enums.heating_cooling_system import HEATING_COOLING_SYSTEM
 from house.enums.room_category import ROOM_CATEGORY
 from house.enums.security_feature import SECURITY_FEATURES
+from property.enums.rental_duration import RENTAL_DURATION
 
 class RequestRoomSerializer(serializers.Serializer):
     description = serializers.CharField(required=True)
     price = serializers.DecimalField(max_digits=32, decimal_places=2, required=True)
+    rental_duration = serializers.ChoiceField(choices=RENTAL_DURATION.choices(), required=False)
     condition = serializers.ChoiceField(choices=CONDITION.choices(), required=True)
     nearby_facilities = serializers.CharField(required=True)
     utilities = serializers.CharField(required=True)

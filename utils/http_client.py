@@ -1,3 +1,4 @@
+import base64
 import requests
 from requests import Response
 from requests.exceptions import Timeout, RequestException
@@ -6,9 +7,10 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 import logging
 from igs_backend import settings
 
+
 logger = logging.getLogger(__name__)
 
-class HttpClient:
+class PaymentHttpClient:
     _order_status_endpoint = "order-status"
 
     def __init__(
@@ -70,4 +72,67 @@ class HttpClient:
             return response
         except RequestException as e:
             logger.error(f"Error fetching order status: {e}", exc_info=True)
+            return None
+        
+        
+class MessageHttpClient:
+    _base_url = settings.MESSAGE_BASE_URL
+    _single_sms_url = settings.MESSAGE_SINGLE_URL
+    
+    def __init__(
+        self, 
+        phone_number: str,
+        text: str, 
+        reference: str,
+    ):
+        self._phone_number = phone_number
+        self._text = text
+        self._reference = reference
+        
+    def _generate_message_basic_auth_header(self) -> str:
+        """Generate basic authorization header for the message by encoding to Base64 username and password of format (username:password)
+
+        Returns:
+            str: Authoriation header of format (Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==)
+        """
+
+        combined = f"{settings.MESSAGE_USERNAME}:{settings.MESSAGE_PASSWORD}"
+        
+        encoded = base64.b64encode(combined.encode('utf-8')).decode('utf-8')
+        
+        authorization_header = f"Basic {encoded}"
+        print(authorization_header)
+        return authorization_header
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        retry=(lambda retry_state: isinstance(retry_state.outcome.exception(), Timeout))
+    )
+    def send_sms(self) -> Response:
+        headers = {
+            "Authorization": self._generate_message_basic_auth_header(),
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+        
+        data = {
+            "from": "N-SMS",
+            "to": self._phone_number,
+            "text": self._text,
+            "reference": self._reference
+        }
+
+        try:
+            response: Response = requests.post(
+                url=f"{self._base_url}/{self._single_sms_url}",
+                json=data, 
+                headers=headers,
+                timeout=10  
+            )
+            response.raise_for_status() 
+            logger.info(f"Message sent successfully: {response.text}")
+            return response
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error sending SMS: {e}", exc_info=True)
             return None

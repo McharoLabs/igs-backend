@@ -39,10 +39,16 @@ class PropertyImage(models.Model):
             images (List[InMemoryUploadedFile]): List of images
         """
         image_objects = []
-        
-        for image in images:
-            image_obj = cls(property=property, image=image)
-            image_objects.append(image_obj)
-            
-        with transaction.atomic():
-            cls.objects.bulk_create(image_objects)
+
+        try:
+            with transaction.atomic():
+                for image in images:
+                    compressed_image = validate_image(image)
+
+                    image_obj = cls(property=property, image=compressed_image)
+                    image_objects.append(image_obj)
+
+                cls.objects.bulk_create(image_objects)
+                
+        except Exception as e:
+            raise e

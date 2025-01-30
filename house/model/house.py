@@ -47,6 +47,7 @@ class House(Property):
         total_dining_room: int,
         total_bath_room: int,
         agent: Agent,
+        rental_duration: str = None,
     ) -> 'House':
         """
         Create and save a new House instance to the database.
@@ -65,6 +66,7 @@ class House(Property):
             total_bed_room (int): Number of bedrooms.
             total_dining_room (int): Number of dining rooms.
             total_bath_room (int): Number of bathrooms.
+            rental_duration (str): Rental duration
             agent (Agent): The agent managing the house.
 
         Returns:
@@ -107,6 +109,7 @@ class House(Property):
             total_bed_room=total_bed_room,
             total_dining_room=total_dining_room,
             total_bath_room=total_bath_room,
+            rental_duration=rental_duration,
         )
 
         house.save()

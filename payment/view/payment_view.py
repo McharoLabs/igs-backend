@@ -7,7 +7,7 @@ from payment.models import Payment
 from rest_framework.views import APIView
 from django.views.decorators.csrf import csrf_exempt
 
-from utils.http_client import HttpClient
+from utils.http_client import PaymentHttpClient
 from requests.exceptions import RequestException, Timeout, ConnectionError
 from django.core.exceptions import ValidationError
 from rest_framework.exceptions import APIException
@@ -28,7 +28,7 @@ class PaymentWebHook(APIView):
                 logger.info(f"Webhook received data: {data}")
                 order_id: str = data.get("order_id")
 
-                client = HttpClient(base_url=settings.ZENOPAY_BASE)
+                client = PaymentHttpClient(base_url=settings.ZENOPAY_BASE)
                 response: Response | None = client.check_order_status(order_id=order_id)
 
                 if response is None:

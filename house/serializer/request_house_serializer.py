@@ -4,10 +4,12 @@ from house.enums.condition import CONDITION
 from house.enums.heating_cooling_system import HEATING_COOLING_SYSTEM
 from house.enums.furnishing_status import FURNISHING_STATUS
 from house.enums.security_feature import SECURITY_FEATURES
+from property.enums.rental_duration import RENTAL_DURATION
 
 class RequestHouseSerializer(serializers.Serializer):
     category = serializers.ChoiceField(choices=CATEGORY.choices(), required=True)
     description = serializers.CharField(required=True)
+    rental_duration = serializers.ChoiceField(choices=RENTAL_DURATION.choices(), required=False)
     price = serializers.DecimalField(max_digits=32, decimal_places=2, required=True)
     condition = serializers.ChoiceField(choices=CONDITION.choices(), required=True)
     nearby_facilities = serializers.CharField(required=True)

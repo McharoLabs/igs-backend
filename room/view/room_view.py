@@ -122,6 +122,7 @@ class RoomViewSet(viewsets.ModelViewSet):
                     heating_cooling_system=validated_data.get("heating_cooling_system"),
                     furnishing_status=validated_data.get("furnishing_status"),
                     room_category=validated_data.get("room_category"),
+                    rental_duration=validated_data.get("rental_duration"),
                     agent=agent
                 )
                 
@@ -134,7 +135,8 @@ class RoomViewSet(viewsets.ModelViewSet):
             
         except ValidationError as e:
             logger.error(f"Validation error: {e}", exc_info=True)
-            return Response({"detail":  e.message}, status=status.HTTP_400_BAD_REQUEST)
+            error_message = getattr(e, 'message', None) or getattr(e, 'detail', None) or e
+            return Response({"detail": error_message}, status=status.HTTP_400_BAD_REQUEST)
 
         except PermissionDenied as e:
             logger.warning(f"Permission error: {e}", exc_info=True)
@@ -188,6 +190,7 @@ class RoomViewSet(viewsets.ModelViewSet):
                                     ),
                                     'room_category': openapi.Schema(type=openapi.TYPE_STRING),
                                     'price': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'rental_duration': openapi.Schema(type=openapi.TYPE_STRING),
                                     'description': openapi.Schema(type=openapi.TYPE_STRING),
                                     'condition': openapi.Schema(type=openapi.TYPE_STRING),
                                     'nearby_facilities': openapi.Schema(type=openapi.TYPE_STRING),
@@ -264,6 +267,7 @@ class RoomViewSet(viewsets.ModelViewSet):
                         ),
                         'room_category': openapi.Schema(type=openapi.TYPE_STRING),
                         'price': openapi.Schema(type=openapi.TYPE_STRING),
+                        'rental_duration': openapi.Schema(type=openapi.TYPE_STRING),
                         'status': openapi.Schema(type=openapi.TYPE_STRING),
                         'description': openapi.Schema(type=openapi.TYPE_STRING),
                         'condition': openapi.Schema(type=openapi.TYPE_STRING),
@@ -343,6 +347,7 @@ class RoomViewSet(viewsets.ModelViewSet):
                         ),
                         'room_category': openapi.Schema(type=openapi.TYPE_STRING),
                         'price': openapi.Schema(type=openapi.TYPE_STRING),
+                        'rental_duration': openapi.Schema(type=openapi.TYPE_STRING),
                         'status': openapi.Schema(type=openapi.TYPE_STRING),
                         'description': openapi.Schema(type=openapi.TYPE_STRING),
                         'condition': openapi.Schema(type=openapi.TYPE_STRING),
@@ -423,6 +428,7 @@ class RoomViewSet(viewsets.ModelViewSet):
                                     ),
                                     'room_category': openapi.Schema(type=openapi.TYPE_STRING),
                                     'price': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'rental_duration': openapi.Schema(type=openapi.TYPE_STRING),
                                     'description': openapi.Schema(type=openapi.TYPE_STRING),
                                     'condition': openapi.Schema(type=openapi.TYPE_STRING),
                                     'nearby_facilities': openapi.Schema(type=openapi.TYPE_STRING),

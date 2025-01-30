@@ -19,7 +19,7 @@ from payment.models import Payment
 from shared.serializer.detail_response_serializer import DetailResponseSerializer
 from subscription_plan.models import SubscriptionPlan
 from user.models import User, Agent
-from utils.http_client import HttpClient
+from utils.http_client import PaymentHttpClient
 from django.db import transaction
 
 
@@ -146,7 +146,7 @@ class SubscriptionPlanViewSet(viewsets.ModelViewSet):
                     'secret_key': settings.ZENOPAY_SECRET_KEY,
                 }
 
-                client = HttpClient(base_url=settings.ZENOPAY_BASE)
+                client = PaymentHttpClient(base_url=settings.ZENOPAY_BASE)
                 response = client.make_payment(data=order_data)
 
                 if response is None:

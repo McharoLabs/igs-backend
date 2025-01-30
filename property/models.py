@@ -2,12 +2,14 @@ from typing import List
 import uuid
 from django.db import models
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 from house.enums.availability_status import STATUS
 from house.enums.category import CATEGORY
 from house.enums.condition import CONDITION
 from house.enums.furnishing_status import FURNISHING_STATUS
 from house.enums.heating_cooling_system import HEATING_COOLING_SYSTEM
+from property.enums.rental_duration import RENTAL_DURATION
 from house.enums.security_feature import SECURITY_FEATURES
 from location.models import Location
 from user.models import Agent
@@ -18,6 +20,7 @@ class Property(models.Model):
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="properties")
     category = models.CharField(max_length=100, choices=CATEGORY.choices(), default=CATEGORY.default(), null=False, blank=False)
     price = models.DecimalField(max_digits=32, decimal_places=2)
+    rental_duration = models.CharField(max_length=50, choices=RENTAL_DURATION.choices(), default=None, null=True, blank=True)
     description = models.TextField()
     condition = models.CharField(max_length=100, choices=CONDITION.choices(), default=CONDITION.default(), null=False, blank=False)
     nearby_facilities = models.TextField()
@@ -45,6 +48,18 @@ class Property(models.Model):
     def mark_booked(self) -> None:
         self.status = STATUS.BOOKED.value
         self.save(update_fields=['status'])
+        
+    def clean(self):
+        """Ensure `rental_duration` is only provided for rental properties."""
+        if self.category == CATEGORY.RENTAL.value and not self.rental_duration:
+            raise ValidationError({"rental_duration": "Rental properties must have a rental duration."})
+        if self.category == CATEGORY.SALE.value and self.rental_duration:
+            raise ValidationError({"rental_duration": "Sale properties should not have a rental duration."})
+
+    def save(self, *args, **kwargs):
+        """Run model validation before saving."""
+        self.full_clean()
+        super().save(*args, **kwargs)
     
     @classmethod
     def total_properties_for_agent(cls, agent: Agent) -> int:
