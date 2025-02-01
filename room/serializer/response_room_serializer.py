@@ -2,13 +2,15 @@ from rest_framework import serializers
 from igs_backend import settings
 from location.serializers import ResponseLocationSerializer
 from room.models import Room
+from user.serializers import ResponseAgentSerializer
 
 
 class ResponseRoomSerializer(serializers.ModelSerializer):
     location = ResponseLocationSerializer(many=False)
     images = serializers.SerializerMethodField()
     is_active_account = serializers.BooleanField(write_only=True)
-    agent = serializers.UUIDField(write_only=True)
+    # agent = serializers.UUIDField(write_only=True)
+    agent = ResponseAgentSerializer(many=False)
     is_locked = serializers.BooleanField(write_only=True)
 
     class Meta:
