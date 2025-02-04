@@ -32,7 +32,9 @@ class MessageUtility:
                 ],
                 "reference": self._reference
             }
-            self._multiple_destination(data=data)
+            # self._multiple_destination(data=data)
+            self._single_destination(message=tenant_message, phone_number=f"255{self._payment.phone_number[1:]}")
+            self._single_destination(message=agent_message, phone_number=f"255{self._agent.phone_number[1:]}")
 
     def _single_destination(self, message: str, phone_number: str):
         try:
