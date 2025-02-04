@@ -270,7 +270,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         request_serializer = RequestBookingSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
         validated_data = request_serializer.validated_data
-        
+
         property = Property.get_property_for_booking(property_id=validated_data.get("property_id"))
         
         if not property:

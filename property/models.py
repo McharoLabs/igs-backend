@@ -95,7 +95,7 @@ class Property(models.Model):
         Returns:
             Property | None: Instance of property that matches the property ID if found, otherwise None
         """
-        return cls.objects.filter(property_id=property_id, status=STATUS.AVAILABLE).first()
+        return cls.objects.filter(property_id=property_id, status=STATUS.AVAILABLE.value).first()
     
     @classmethod
     def get_agent_property_by_id(cls, agent: Agent, property_id: uuid.UUID) -> 'Property | None':
