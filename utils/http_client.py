@@ -78,16 +78,9 @@ class PaymentHttpClient:
 class MessageHttpClient:
     _base_url = settings.MESSAGE_BASE_URL
     _single_sms_url = settings.MESSAGE_SINGLE_URL
-    
-    def __init__(
-        self, 
-        phone_number: str,
-        text: str, 
-        reference: str,
-    ):
-        self._phone_number = phone_number
-        self._text = text
-        self._reference = reference
+    _multi_sms_url = settings.MESSAGE_MULTI
+    _derivery_report = f"{_base_url}/{settings.DERIVERY_REPORT_URL}=" 
+    _from = settings.MESSAGE_FROM
         
     def _generate_message_basic_auth_header(self) -> str:
         """Generate basic authorization header for the message by encoding to Base64 username and password of format (username:password)
@@ -109,7 +102,7 @@ class MessageHttpClient:
         wait=wait_exponential(multiplier=1, min=1, max=10),
         retry=(lambda retry_state: isinstance(retry_state.outcome.exception(), Timeout))
     )
-    def send_sms(self) -> Response:
+    def send_to_single_destination(self, phone_number: str, message: str, reference: str) -> Response:
         headers = {
             "Authorization": self._generate_message_basic_auth_header(),
             "Content-Type": "application/json",
@@ -117,10 +110,10 @@ class MessageHttpClient:
         }
         
         data = {
-            "from": "N-SMS",
-            "to": self._phone_number,
-            "text": self._text,
-            "reference": self._reference
+            "from": self._from,
+            "to": phone_number,
+            "text": message,
+            "reference": reference
         }
 
         try:
@@ -135,4 +128,54 @@ class MessageHttpClient:
             return response
         except requests.exceptions.RequestException as e:
             logger.error(f"Error sending SMS: {e}", exc_info=True)
+            return None
+    
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        retry=(lambda retry_state: isinstance(retry_state.outcome.exception(), Timeout))
+    )
+    def send_to_multi_destination(self, data: Any) -> Response:
+        headers = {
+            "Authorization": self._generate_message_basic_auth_header(),
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+
+        try:
+            response: Response = requests.post(
+                url=f"{self._base_url}/{self._multi_sms_url}",
+                json=data, 
+                headers=headers,
+                timeout=10  
+            )
+            response.raise_for_status() 
+            logger.info(f"Message sent successfully: {response.text}")
+            return response
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error sending SMS: {e}", exc_info=True)
+            return None
+        
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        retry=lambda retry_state: isinstance(retry_state.outcome.exception(), Timeout)
+    )
+    def report(self, message_id: str) -> Response | None:
+        """Fetch SMS delivery report for a given message ID."""
+        headers = {
+            "Authorization": self._generate_message_basic_auth_header(),
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+
+        url = f"{self._base_url}{message_id}"
+        
+        try:
+            response: Response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+            logger.info(f"Delivery report retrieved successfully: {response.text}")
+            return response
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching delivery report: {e}", exc_info=True)
             return None
