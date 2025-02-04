@@ -282,7 +282,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         try:
             payment = Payment.create(
                 phone_number=validated_data.get("phone_number"),
-                payment_type=PaymentType.BOOKING,
+                payment_type=PaymentType.BOOKING.value,
                 amount=settings.BOOKING_FEE,
                 property=property,
             )

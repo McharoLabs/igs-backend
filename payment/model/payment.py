@@ -110,7 +110,7 @@ class Payment(models.Model):
     @classmethod
     def create(
         cls, phone_number: str, 
-        payment_type: PaymentType, 
+        payment_type: str, 
         amount: Decimal, 
         agent: Agent = None,
         property: Property = None,
@@ -146,11 +146,11 @@ class Payment(models.Model):
         Returns:
             Payment: The created Payment instance that has been validated and saved.
         """
-        if payment_type == PaymentType.BOOKING:
+        if payment_type == PaymentType.BOOKING.value:
             if agent or plan:
                 raise ValidationError("For Booking type, agent and plan should not be provided.")
         
-        elif payment_type == PaymentType.ACCOUNT:
+        elif payment_type == PaymentType.ACCOUNT.value:
             if property:
                 raise ValidationError("For Account type, property should not be provided.")
         

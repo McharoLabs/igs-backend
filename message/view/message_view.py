@@ -17,7 +17,7 @@ class MessageUtility:
         self._customer_name = customer_name
 
     def send_sms(self) -> None:
-        if self._payment.payment_type == PaymentType.ACCOUNT:
+        if self._payment.payment_type == PaymentType.ACCOUNT.value:
             agent_message = f"You have successful subscribed {self._payment.plan.name}\nReference: {self._reference}\nAmount: {self._payment.amount}\nLogin to upload property at {settings.WEB_URL}"
             self._single_destination(message=agent_message, phone_number=f"255{self._payment.phone_number[1:]}")
         else:

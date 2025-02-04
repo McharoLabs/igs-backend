@@ -122,7 +122,7 @@ class SubscriptionPlanViewSet(viewsets.ModelViewSet):
 
                 payment = Payment.create(
                     phone_number=validated_data.get("phone_number"),
-                    payment_type=PaymentType.ACCOUNT,
+                    payment_type=PaymentType.ACCOUNT.value,
                     amount=plan.price,
                     agent=agent,
                     plan=plan

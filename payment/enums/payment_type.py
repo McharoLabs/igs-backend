@@ -10,4 +10,4 @@ class PaymentType(Enum):
     
     @classmethod
     def default(cls) -> str:
-        return cls.BOOKING
+        return cls.BOOKING.value
