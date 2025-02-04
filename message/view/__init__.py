@@ -1,1 +1,0 @@
-from .message_view import MessageViewSet
