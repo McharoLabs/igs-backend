@@ -287,14 +287,10 @@ class BookingViewSet(viewsets.ModelViewSet):
                 property=property,
             )
             
-            phone_number = payment.phone_number
-            if phone_number.startswith('+255'):
-                phone_number = '0' + phone_number[4:]
-            
             order_data = {
                     'buyer_email': validated_data.get('customer_email'),
                     'buyer_name': validated_data.get('customer_name'),
-                    'buyer_phone': phone_number,
+                    'buyer_phone': payment.phone_number,
                     'amount': float(payment.amount),
                     'account_id': settings.ACCOUNT_ID,
                     'webhook_url': f"{settings.APP_BASE}{settings.WEB_HOOK_URL}",

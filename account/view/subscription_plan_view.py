@@ -128,14 +128,10 @@ class SubscriptionPlanViewSet(viewsets.ModelViewSet):
                     plan=plan
                 )
 
-                phone_number = payment.phone_number
-                if phone_number.startswith('+255'):
-                    phone_number = '0' + phone_number[4:]
-
                 order_data = {
                     'buyer_email': payment.agent.email,
                     'buyer_name': f"{payment.agent.first_name} {payment.agent.middle_name} {payment.agent.last_name}",
-                    'buyer_phone': phone_number,
+                    'buyer_phone': payment.phone_number,
                     'amount': int(payment.amount),
                     'account_id': settings.ACCOUNT_ID,
                     'webhook_url': f"{settings.APP_BASE}{settings.WEB_HOOK_URL}",
