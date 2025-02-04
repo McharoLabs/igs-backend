@@ -161,7 +161,7 @@ class MessageHttpClient:
         wait=wait_exponential(multiplier=1, min=1, max=10),
         retry=lambda retry_state: isinstance(retry_state.outcome.exception(), Timeout)
     )
-    def report(self, message_id: str) -> Response | None:
+    def report(self, message_id: str) -> Response:
         """Fetch SMS delivery report for a given message ID."""
         headers = {
             "Authorization": self._generate_message_basic_auth_header(),
