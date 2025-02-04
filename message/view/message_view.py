@@ -24,7 +24,7 @@ class MessageUtility:
             self._single_destination(message=agent_message, phone_number=f"255{self._payment.phone_number[1:]}")
         else:
             agent_message = f"Dear {self._agent.first_name} {self._agent.last_name} you have new booking from {self._customer_name}\nContact: {self._payment.phone_number}"
-            tenant_message = f"Dear {self._customer_name} you have successful booked the property.\nAgent: {self._payment.property.agent.first_name} {self._payment.property.agent.middle_name} {self._payment.property.agent.last_name} {self._customer_name}\nContact: {self._payment.phone_number}"
+            tenant_message = f"Dear {self._customer_name} you have successful booked the property.\nAgent: {self._payment.property.agent.first_name} {self._payment.property.agent.middle_name} {self._payment.property.agent.last_name} {self._customer_name}\nContact: {self._agent.phone_number}"
             data = {
                 "messages": [
                     {"from": settings.MESSAGE_FROM, "to": f"255{self._payment.phone_number[1:]}", "text": tenant_message},
