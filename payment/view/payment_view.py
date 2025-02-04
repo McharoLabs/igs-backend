@@ -70,7 +70,7 @@ class PaymentWebHook(APIView):
                         )
                         
                         
-                        messageUtilities = MessageUtility(reference=wh_reference, customer_name=wh_customer_name, payment=payment)
+                        messageUtilities = MessageUtility(reference=wh_reference, customer_name=wh_customer_name, payment=payment, agent=payment.property.agent)
                         messageUtilities.send_sms()
 
                         logger.info(f"Payment made successful for {payment}")

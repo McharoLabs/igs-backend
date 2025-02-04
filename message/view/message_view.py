@@ -3,6 +3,7 @@ from typing import Any
 from igs_backend import settings
 from payment.enums.payment_type import PaymentType
 from payment.models import Payment
+from user.model.agent import Agent
 from utils.http_client import MessageHttpClient
 from message.models import MessageQueue
 
@@ -11,22 +12,23 @@ logger = logging.getLogger(__name__)
 class MessageUtility:
     _client = MessageHttpClient()
 
-    def __init__(self,reference: str, customer_name: str, payment: Payment):
+    def __init__(self,reference: str, customer_name: str, payment: Payment, agent: Agent = None):
         self._reference = reference
         self._payment = payment
         self._customer_name = customer_name
+        self._agent = agent
 
     def send_sms(self) -> None:
         if self._payment.payment_type == PaymentType.ACCOUNT.value:
             agent_message = f"You have successful subscribed {self._payment.plan.name} plan\nReference: {self._reference}\nAmount: {self._payment.amount}\nLogin to upload property at {settings.WEB_URL}"
             self._single_destination(message=agent_message, phone_number=f"255{self._payment.phone_number[1:]}")
         else:
-            agent_message = f"Dear {self._payment.agent.first_name} {self._payment.agent.last_name} you have new booking from {self._customer_name}\nContact: {self._payment.phone_number}"
+            agent_message = f"Dear {self._agent.first_name} {self._agent.last_name} you have new booking from {self._customer_name}\nContact: {self._payment.phone_number}"
             tenant_message = f"Dear {self._customer_name} you have successful booked the property.\nAgent: {self._payment.property.agent.first_name} {self._payment.property.agent.middle_name} {self._payment.property.agent.last_name} {self._customer_name}\nContact: {self._payment.phone_number}"
             data = {
                 "messages": [
                     {"from": settings.MESSAGE_FROM, "to": f"255{self._payment.phone_number[1:]}", "text": tenant_message},
-                    {"from": settings.MESSAGE_FROM, "to": f"255{self._payment.agent.phone_number[1:]}", "text": agent_message}
+                    {"from": settings.MESSAGE_FROM, "to": f"255{self._agent.phone_number[1:]}", "text": agent_message}
                 ],
                 "reference": self._reference
             }
