@@ -359,19 +359,6 @@ class HouseViewSet(viewsets.ModelViewSet):
                                         type=openapi.TYPE_ARRAY,
                                         items=openapi.Schema(type=openapi.TYPE_STRING),
                                     ),
-                                    'agent': openapi.Schema(
-                                        type=openapi.TYPE_OBJECT,
-                                        roperties={
-                                            'user_id': openapi.Schema(type=openapi.TYPE_STRING),
-                                            'first_name': openapi.Schema(type=openapi.TYPE_STRING),
-                                            'middle_name': openapi.Schema(type=openapi.TYPE_STRING),
-                                            'last_name': openapi.Schema(type=openapi.TYPE_STRING),
-                                            'phone_number': openapi.Schema(type=openapi.TYPE_STRING),
-                                            'gender': openapi.Schema(type=openapi.TYPE_STRING),
-                                            'email': openapi.Schema(type=openapi.TYPE_STRING),
-                                            'avatar': openapi.Schema(type=openapi.TYPE_STRING),
-                                        }
-                                    ),
                                     'category': openapi.Schema(type=openapi.TYPE_STRING),
                                     'price': openapi.Schema(type=openapi.TYPE_STRING),
                                     'rental_duration': openapi.Schema(type=openapi.TYPE_STRING),
