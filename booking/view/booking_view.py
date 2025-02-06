@@ -51,8 +51,8 @@ class BookingViewSet(viewsets.ModelViewSet):
     
     
     @swagger_auto_schema(
-        operation_description="Retrieve agent booked properties for the authorized agent",
-        operation_summary="Retrieve booked properties for an agent",
+        operation_description="Retrieve agent booked property for the authorized agent",
+        operation_summary="Retrieve booked property for an agent",
         method="get",
         tags=["booking"],
         responses={
@@ -68,6 +68,8 @@ class BookingViewSet(viewsets.ModelViewSet):
                                 'property_id': openapi.Schema(type=openapi.TYPE_STRING),
                                 'category': openapi.Schema(type=openapi.TYPE_STRING),
                                 'price': openapi.Schema(type=openapi.TYPE_STRING),
+                                'heating_cooling_system': openapi.Schema(type=openapi.TYPE_STRING),
+                                'status': openapi.Schema(type=openapi.TYPE_STRING),
                                 'rental_duration': openapi.Schema(type=openapi.TYPE_STRING),
                                 'description': openapi.Schema(type=openapi.TYPE_STRING),
                                 'condition': openapi.Schema(type=openapi.TYPE_STRING),
@@ -171,6 +173,8 @@ class BookingViewSet(viewsets.ModelViewSet):
                                             'property_id': openapi.Schema(type=openapi.TYPE_STRING),
                                             'category': openapi.Schema(type=openapi.TYPE_STRING),
                                             'price': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'heating_cooling_system': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'status': openapi.Schema(type=openapi.TYPE_STRING),
                                             'rental_duration': openapi.Schema(type=openapi.TYPE_STRING),
                                             'description': openapi.Schema(type=openapi.TYPE_STRING),
                                             'condition': openapi.Schema(type=openapi.TYPE_STRING),
@@ -214,14 +218,25 @@ class BookingViewSet(viewsets.ModelViewSet):
                 description="Internal server error",
                 schema=DetailResponseSerializer(many=False)
             ),
-        }
+        },
+        manual_parameters=[
+            openapi.Parameter(
+                'customer_name', 
+                openapi.IN_QUERY, 
+                description="Customer name",
+                type=openapi.TYPE_STRING,
+                required=False,
+            ),
+        ]
     )
     @action(detail=False, methods=['get'])
     def agent_booked_properties(self, request: HttpRequest):
         user = cast(User, request.user)
         
+        customer_name = request.GET.get('customer_name', None)
+        
         try:
-            booked_properties = Booking.get_booked_properties(agent=user)
+            booked_properties = Booking.get_booked_properties(agent=user, customer_name=customer_name)
             
             paginator = PageNumberPagination()
             page = paginator.paginate_queryset(booked_properties, request)

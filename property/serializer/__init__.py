@@ -1,2 +1,3 @@
 from .response_property_serializer import ResponsePropertySerializer
+from .property_status_serializer import RequestPropertyStatusSerializer
 from .request_property_image_serializer import RequestPropertyImageSerializer

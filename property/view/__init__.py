@@ -1,1 +1,2 @@
 from .property_image_view import PropertyImageViewSet
+from .property_view import PropertyViewSet

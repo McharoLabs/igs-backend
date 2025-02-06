@@ -2,7 +2,7 @@ from decimal import Decimal
 import uuid
 from django.db import models
 from django.utils import timezone
-from django.db.models.query import QuerySet
+from django.db.models.query import QuerySet, Q
 
 from property.models import Property
 from user.models import Agent
@@ -59,17 +59,15 @@ class Booking(models.Model):
         return None 
     
     @classmethod
-    def get_booked_properties(cls, agent: Agent) -> 'QuerySet[Booking]':
-        """Retrieve house bookings for an agent  who have booked a house.
+    def get_booked_properties(cls, agent: Agent, customer_name: str = None) -> 'QuerySet[Booking]':
+        """Retrieve house bookings for an agent who has booked a house, with optional search by customer name."""
+        queryset = cls.objects.filter(property__status=STATUS.BOOKED.value, property__agent=agent)
 
-        Args:
-            agent (Agent, optional): Agent instance to filter houses. Defaults to None.
+        if customer_name:
+            queryset = queryset.filter(Q(customer_name__icontains=customer_name))
 
-        Returns:
-            QuerySet[Booking]: Filtered queryset of house bookings.
-        """
-        return cls.objects.filter(property__status=STATUS.BOOKED.value, property__agent=agent).order_by('-listing_date')
-        
+        return queryset.order_by('-listing_date')
+    
     @classmethod
     def save_booking(cls, property: Property, customer_name: str, customer_email: str, customer_phone_number: str) -> None:
         """Save booking details to the database besically after payments completed

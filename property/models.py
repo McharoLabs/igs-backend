@@ -1,6 +1,7 @@
 from typing import List
 import uuid
 from django.db import models
+from django.http import Http404
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 
@@ -60,6 +61,40 @@ class Property(models.Model):
         """Run model validation before saving."""
         self.full_clean()
         super().save(*args, **kwargs)
+        
+    @classmethod
+    def mark_property_rented(cls, property_id: uuid.UUID, agent: Agent) -> None:
+        property = cls.objects.filter(property_id=property_id, status=STATUS.BOOKED.value, agent=agent).first()
+        
+        if property is None:
+            raise Http404("Property not found or not in the booked status.")
+        
+        property.status = STATUS.RENTED.value
+        property.save(update_fields=['status'])
+        
+    @classmethod
+    def mark_property_available(cls, property_id: uuid.UUID, agent: Agent) -> None:
+        property = cls.objects.filter(
+            property_id=property_id,
+            agent=agent,
+            status__in=[STATUS.RENTED.value, STATUS.SOLD.value, STATUS.BOOKED.value]
+        ).first()
+        
+        if property is None:
+            raise Http404("Property not found or not in rented or sold or booked status.")
+        
+        property.status = STATUS.AVAILABLE.value
+        property.save(update_fields=['status'])
+        
+    @classmethod
+    def mark_property_sold(cls, property_id: uuid.UUID, agent: Agent) -> None:
+        property = cls.objects.filter(property_id=property_id, status=STATUS.SOLD.value, agent=agent).first()
+        
+        if property is None:
+            raise Http404("Property not found or not in the sold status.")
+        
+        property.status = STATUS.SOLD.value
+        property.save(update_fields=['status'])
     
     @classmethod
     def total_properties_for_agent(cls, agent: Agent) -> int:

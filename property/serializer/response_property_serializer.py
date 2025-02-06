@@ -11,7 +11,7 @@ class ResponsePropertySerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Property
-        fields = ['property_id', 'category', 'price', 'rental_duration', 'description', 'condition', 'nearby_facilities', 'utilities', 
+        fields = ['property_id', 'category', 'price', 'status', 'heating_cooling_system', 'rental_duration', 'description', 'condition', 'nearby_facilities', 'utilities', 
                   'security_features', 'furnishing_status', 'location', 'images']
     
     def get_images(self, obj):
