@@ -16,6 +16,7 @@ from igs_backend import settings
 from payment.enums.payment_type import PaymentType
 from payment.models import Payment
 from property.models import Property
+from settings.models import SiteSettings
 from shared.seriaizers import DetailResponseSerializer
 from rest_framework.pagination import PageNumberPagination
 import logging
@@ -272,6 +273,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         validated_data = request_serializer.validated_data
 
         property = Property.get_property_for_booking(property_id=validated_data.get("property_id"))
+        siteSettings: SiteSettings | None = SiteSettings.get_company_settings()
         
         if not property:
             return Response(data={"detail": "Property not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -283,7 +285,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             payment = Payment.create(
                 phone_number=validated_data.get("phone_number"),
                 payment_type=PaymentType.BOOKING.value,
-                amount=settings.BOOKING_FEE,
+                amount=siteSettings.booking_fee if siteSettings else settings.BOOKING_FEE,
                 property=property,
             )
             
