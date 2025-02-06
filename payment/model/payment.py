@@ -13,6 +13,7 @@ from user.models import Agent
 from utils.phone_number import validate_phone_number
 from django.utils import timezone
 from django.db import transaction
+from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -45,12 +46,24 @@ class Payment(models.Model):
         """Mark the payment as consumed and store the timestamp."""
         self.is_consumed = True
         self.consumed_at = timezone.now()
-        self.status = PaymentStatus.COMPLETED
+        self.status = PaymentStatus.COMPLETED.value
         self.save()
 
         
     def __str__(self) -> str:
         return str(self.payment_id)
+    
+    @classmethod
+    def delete_pending_payments(cls):
+        """Delete pending payments that have stayed for 1 day."""
+        one_day_ago = timezone.now() - timedelta(days=1)
+        
+        pending_payments = cls.objects.filter(status=PaymentStatus.PENDING.value, payment_date__lt=one_day_ago)
+        
+        deleted_count, _ = pending_payments.delete()
+        
+        logger.info(f"{deleted_count} pending payments older than 1 day were deleted.")
+        
     
     def update_order_and_message(self, order_id: str, message: str) -> None:
         """Update payment by inserting order id and message from the payment gateway after initializing the request
