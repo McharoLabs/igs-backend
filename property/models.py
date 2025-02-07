@@ -4,6 +4,7 @@ from django.db import models
 from django.http import Http404
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.db.models import QuerySet
 
 from house.enums.availability_status import STATUS
 from house.enums.category import CATEGORY
@@ -61,6 +62,15 @@ class Property(models.Model):
         """Run model validation before saving."""
         self.full_clean()
         super().save(*args, **kwargs)
+        
+    @classmethod
+    def demo_properties(cls) -> 'QuerySet[Property]':
+        """Retrieves demo property and uncategorized property
+
+        Returns:
+            QuerySet[Property]: Property instances queryset
+        """
+        return cls.objects.filter(status=STATUS.AVAILABLE.value, is_active_account=True, is_locked=False).order_by('-listing_date')
         
     @classmethod
     def mark_property_rented(cls, property_id: uuid.UUID, agent: Agent) -> None:

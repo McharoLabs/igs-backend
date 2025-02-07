@@ -3,6 +3,6 @@ from . import views
 
 router = DefaultRouter()
 
-router.register(r'properties', views.PropertyImageViewSet, basename='property')
-router.register(r'properties', views.PropertyViewSet, basename='property_status')
+router.register(r'images', views.PropertyImageViewSet, basename='image')
+router.register(r'properties', views.PropertyViewSet, basename='property')
 urlpatterns = router.urls

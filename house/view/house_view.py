@@ -21,7 +21,6 @@ from rest_framework.pagination import PageNumberPagination
 from django.db import transaction, DatabaseError
 from django.core.exceptions import PermissionDenied, ValidationError
 
-from user.enums.gender import GENDER
 from user.models import Agent
 from user.models import User
 
@@ -343,7 +342,7 @@ class HouseViewSet(viewsets.ModelViewSet):
                             items=openapi.Schema(
                                 type=openapi.TYPE_OBJECT,
                                 properties={
-                                    'house_id': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'property_id': openapi.Schema(type=openapi.TYPE_STRING),
                                     'location': openapi.Schema(
                                         type=openapi.TYPE_OBJECT,
                                         properties={

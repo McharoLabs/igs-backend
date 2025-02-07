@@ -42,7 +42,7 @@ class PropertyImageViewSet(viewsets.ModelViewSet):
         operation_description="Add property images by providing necessary details like house id and an array of images, etc.",
         operation_summary="Add property images",
         method="post",
-        tags=["property"],
+        tags=["propertyImage"],
         request_body=RequestPropertyImageSerializer,
         responses={
             201: openapi.Response(
@@ -97,7 +97,7 @@ class PropertyImageViewSet(viewsets.ModelViewSet):
         operation_description="View property image",
         operation_summary="View property image",
         method="get",
-        tags=["property"],
+        tags=["propertyImage"],
         responses={
             200: "Image response", 
             400: "Invalid input data",
