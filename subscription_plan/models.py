@@ -13,13 +13,19 @@ class SubscriptionPlan(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     max_houses = models.IntegerField()
     duration_days = models.IntegerField(default=30)
-    
+    is_visible = models.BooleanField(default=True, help_text="Whether this plan should be displayed to users.")
+    is_free = models.BooleanField(default=False, help_text="Indicates whether the plan is free.")
+
     class Meta:
         db_table = 'subscription_plan'
         app_label = 'subscription_plan'
 
     def __str__(self):
         return f"{self.name} - ${self.price} (Max {self.max_houses} Houses)"
+    
+    @classmethod
+    def get_free_plan(cls) -> 'SubscriptionPlan':
+        return cls.objects.filter(is_free=True).first()
     
     @classmethod
     def get_plan_by_id(cls, subscription_plan_id: uuid.UUID) -> 'SubscriptionPlan':
@@ -41,4 +47,4 @@ class SubscriptionPlan(models.Model):
         Returns:
             QuerySet['SubscriptionPlan']: A queryset containing all SubscriptionPlan objects.
         """
-        return cls.objects.all()
+        return cls.objects.filter(is_visible=True, is_free=False)

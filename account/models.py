@@ -95,6 +95,28 @@ class Account(models.Model):
             account.save()
 
             logger.info(f"Plan subscription for {agent}")
+            
+    @classmethod
+    def subscribe_free_account(cls, plan: SubscriptionPlan, agent: Agent) -> None:
+        with transaction.atomic():
+            current_active_account = cls.objects.filter(agent=agent, is_active=True).first()
+
+            if current_active_account:
+                current_active_account.is_active = False
+                current_active_account.save()
+
+            account = cls(
+                agent=agent,
+                plan=plan
+            )
+
+            account.save()
+
+            logger.info(f"Plan subscription for {agent}")
+            
+    def get_agents_without_account() -> 'QuerySet[Agent]':
+        return Agent.objects.filter(agent_account__isnull=True)
+        
 
     @classmethod
     def get_account(cls, agent: Agent):

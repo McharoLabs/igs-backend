@@ -12,16 +12,5 @@ class AccountAdmin(admin.ModelAdmin):
     date_hierarchy = 'start_date'
     raw_id_fields = ('agent', 'plan')
 
-class SubscriptionPlanAdmin(admin.ModelAdmin):
-    list_display = ('subscription_plan_id', 'name', 'price', 'max_houses', 'duration_days')
-    list_filter = ('max_houses', 'duration_days')
-    search_fields = ('name',)
-    ordering = ('name',)
-    fieldsets = (
-        (None, {
-            'fields': ('name', 'price', 'max_houses', 'duration_days')
-        }),
-    )
 
 admin.site.register(Account, AccountAdmin)
-admin.site.register(SubscriptionPlan, SubscriptionPlanAdmin)
