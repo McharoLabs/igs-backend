@@ -29,7 +29,7 @@ def subscribe_free_account_job():
         free_plan = SubscriptionPlan.get_free_plan()
         
         if free_plan is None:
-            return
+            return None
         
         agents = Account.get_agents_without_account()
         
