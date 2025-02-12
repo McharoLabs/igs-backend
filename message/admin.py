@@ -3,7 +3,7 @@ from django.utils.html import format_html
 from .models import MessageQueue
 
 class MessageQueueAdmin(admin.ModelAdmin):
-    list_display = ("to", "description", "name", "group_name", "actions")
+    list_display = ("to", "description", "name", "group_name", "view_payment_action")
     search_fields = ("to", "name", "group_name", "description")
     list_filter = ("group_name",)
     ordering = ("-id",)
@@ -14,7 +14,7 @@ class MessageQueueAdmin(admin.ModelAdmin):
         }),
     )
 
-    def actions(self, obj):
+    def view_payment_action(self, obj):
         """Add a clickable button to view payment details."""
         if obj.payment:
             return format_html(
@@ -24,6 +24,6 @@ class MessageQueueAdmin(admin.ModelAdmin):
             )
         return format_html('<span style="color: red;">No Payment</span>')
 
-    actions.short_description = "Actions"
+    view_payment_action.short_description = "Actions"
 
 admin.site.register(MessageQueue, MessageQueueAdmin)
