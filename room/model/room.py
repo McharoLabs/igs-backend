@@ -11,7 +11,6 @@ from user.models import Agent
 from django.core.exceptions import PermissionDenied
 from django.db.models import QuerySet, Q, Count
 
-
 class Room(Property):
     room_category = models.CharField(max_length=100, choices=ROOM_CATEGORY.choices(), default=ROOM_CATEGORY.default(), null=False, blank=False)
     
@@ -130,7 +129,8 @@ class Room(Property):
     
     @classmethod
     def room_filter(cls, region: str = None, district: str = None, min_price: Decimal = None, 
-                    max_price: Decimal = None, room_category: str = None) -> 'QuerySet[Room]':
+                    max_price: Decimal = None, room_category: str = None, ward: str = None, 
+                    street: str = None) -> 'QuerySet[Room]':
         """
         Class method to filter rooms based on the given criteria.
 
@@ -140,9 +140,8 @@ class Room(Property):
             min_price (Decimal, optional): The minimum price of the property. Defaults to None.
             max_price (Decimal, optional): The maximum price of the property. Defaults to None.
             room_category (str, optional): The category of the room (e.g., 'Bedroom'). Defaults to None.
-
-        Raises:
-            ValueError: If an invalid room category is provided.
+            ward (str, optional): The ward of the property. Defaults to None.
+            street (str, optional): The street of the property. Defaults to None.
 
         Returns:
             QuerySet[Room]: A queryset of rooms filtered based on the given criteria.
@@ -172,6 +171,12 @@ class Room(Property):
         if district:
             filters &= Q(location__district__iexact=district)
 
-        return cls.objects.filter(filters).annotate(
+        if ward:
+            filters &= Q(**{"location__ward__icontains": ward.lower()})
+
+        if street:
+            filters &= Q(**{"location__street__icontains": street.lower()})
+
+        return cls.objects.filter(filters).select_related('location').order_by('-listing_date').annotate(
             image_count=Count('images', distinct=True)
         ).filter(image_count__gt=0)

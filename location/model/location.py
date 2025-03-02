@@ -10,6 +10,7 @@ class Location(models.Model):
     region = models.CharField(max_length=255)
     district = models.CharField(max_length=255)
     ward = models.CharField(max_length=255)
+    street = models.CharField(max_length=255, null=True, blank=True)
     latitude = models.DecimalField(max_digits=11, decimal_places=8)
     longitude = models.DecimalField(max_digits=11, decimal_places=8)
 
@@ -21,7 +22,7 @@ class Location(models.Model):
         return f'{self.district} {self.ward}, {self.region}'
 
     @classmethod
-    def add_location(cls, region: str, district: str, ward: str, latitude: Decimal, longitude: Decimal) -> 'Location':
+    def add_location(cls, region: str, district: str, ward: str, street: str, latitude: Decimal, longitude: Decimal) -> 'Location':
         """This method creates a new location in the database and returns the instance of the newly added location.
 
         Args:
@@ -38,6 +39,7 @@ class Location(models.Model):
             region=region,
             district=district,
             ward=ward,
+            street=street,
             latitude=latitude,
             longitude=longitude
         )

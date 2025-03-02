@@ -160,7 +160,9 @@ class House(Property):
         region: str = None, 
         district: str = None, 
         min_price: Decimal = None, 
-        max_price: Decimal = None, 
+        max_price: Decimal = None,
+        ward: str = None, 
+        street: str = None
     ) -> 'QuerySet[House]':
         
         if category and not CATEGORY.valid(category=category):
@@ -180,6 +182,12 @@ class House(Property):
             filters &= Q(price__gte=min_price)
         if max_price:
             filters &= Q(price__lte=max_price)
+            
+        if ward:
+            filters &= Q(**{"location__ward__icontains": ward.lower()})
+
+        if street:
+            filters &= Q(**{"location__street__icontains": street.lower()})
         
         return cls.objects.filter(filters).select_related('location').order_by('-listing_date').annotate(
             image_count=Count('images', distinct=True)
