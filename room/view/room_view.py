@@ -132,7 +132,7 @@ class RoomViewSet(viewsets.ModelViewSet):
                 
                 PropertyImage.save(property=property, images=validated_data.get("images"))
 
-                response_serializer = DetailResponseSerializer({"detail": "Umefanikiwa kupakia taarifa chumba"})
+                response_serializer = DetailResponseSerializer({"detail": "Umefanikiwa kupakia taarifa za chumba"})
                 return Response(response_serializer.data, status=status.HTTP_201_CREATED)
             
         except ValidationError as e:
@@ -201,7 +201,7 @@ class RoomViewSet(viewsets.ModelViewSet):
                                     'security_features': openapi.Schema(type=openapi.TYPE_STRING),
                                     'heating_cooling_system': openapi.Schema(type=openapi.TYPE_STRING),
                                     'furnishing_status': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'is_locked': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                    'is_deleted': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                                     'listing_date': openapi.Schema(type=openapi.TYPE_STRING),
                                     'updated_at': openapi.Schema(type=openapi.TYPE_STRING),
                                 }
@@ -279,7 +279,7 @@ class RoomViewSet(viewsets.ModelViewSet):
                         'security_features': openapi.Schema(type=openapi.TYPE_STRING),
                         'heating_cooling_system': openapi.Schema(type=openapi.TYPE_STRING),
                         'furnishing_status': openapi.Schema(type=openapi.TYPE_STRING),
-                        'is_locked': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        'is_deleted': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                         'listing_date': openapi.Schema(type=openapi.TYPE_STRING),
                         'updated_at': openapi.Schema(type=openapi.TYPE_STRING),
                     }
@@ -360,7 +360,7 @@ class RoomViewSet(viewsets.ModelViewSet):
                         'security_features': openapi.Schema(type=openapi.TYPE_STRING),
                         'heating_cooling_system': openapi.Schema(type=openapi.TYPE_STRING),
                         'furnishing_status': openapi.Schema(type=openapi.TYPE_STRING),
-                        'is_locked': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        'is_deleted': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                         'listing_date': openapi.Schema(type=openapi.TYPE_STRING),
                         'updated_at': openapi.Schema(type=openapi.TYPE_STRING),
                     }
@@ -454,7 +454,7 @@ class RoomViewSet(viewsets.ModelViewSet):
                                     'security_features': openapi.Schema(type=openapi.TYPE_STRING),
                                     'heating_cooling_system': openapi.Schema(type=openapi.TYPE_STRING),
                                     'furnishing_status': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'is_locked': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                    'is_deleted': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                                     'listing_date': openapi.Schema(type=openapi.TYPE_STRING),
                                     'updated_at': openapi.Schema(type=openapi.TYPE_STRING),
                                 }

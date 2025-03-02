@@ -12,7 +12,7 @@ from property.models import Property
 from user.models import Agent
 import logging
 from django.db.models.query import QuerySet
-from django.db.models import Q, Count
+from django.db.models import QuerySet, Q, Count, When, Case, IntegerField, Value, OuterRef, Exists
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +168,7 @@ class House(Property):
         if category and not CATEGORY.valid(category=category):
             raise ValueError(f"Invalid category '{category}'. Valid options are {', '.join([choice[0] for choice in CATEGORY.choices()])}.")
         
-        filters = Q(status=STATUS.AVAILABLE.value, is_active_account=True, is_locked=False)
+        filters = Q(status=STATUS.AVAILABLE.value, is_active_account=True, is_deleted=False)
 
         if category:
             filters &= Q(category=category)
@@ -189,8 +189,23 @@ class House(Property):
         if street:
             filters &= Q(**{"location__street__icontains": street.lower()})
         
-        return cls.objects.filter(filters).select_related('location').order_by('-listing_date').annotate(
-            image_count=Count('images', distinct=True)
+        paid_account_exists = Account.objects.filter(
+            agent=OuterRef("agent"),
+            is_active=True,
+            plan__is_free=False
+        ).values("pk")
+
+        queryset = cls.objects.filter(filters).annotate(
+            is_paid=Case(
+                When(Exists(paid_account_exists), then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField()
+            ),
+            image_count=Count('images', distinct=True) 
         ).filter(image_count__gt=0)
+
+        queryset = queryset.select_related('location').order_by('-is_paid', '-listing_date')
+
+        return queryset
 
     

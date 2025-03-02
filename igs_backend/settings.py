@@ -75,6 +75,7 @@ ALLOWED_HOSTS = [
     'portal.kedeshlimited.com',
     '.kedeshlimited.com',
     '173.236.213.76',
+    '127.0.0.1',
 ]
 
 
@@ -127,9 +128,9 @@ MIDDLEWARE = [
 
 CRONJOBS = [
     # ('* * * * *', 'booking.cron.my_scheduled_job'),
-    # ('* * * * *', 'account.cron.expire_account_job'),
-    # ('* * * * *', 'house.cron.activate_house_job'),
-    # ('* * * * *', 'house.cron.deactivate_house_job'),
+    ('* * * * *', 'account.cron.expire_account_job'),
+    ('* * * * *', 'property.cron.activate_property_job'),
+    ('* * * * *', 'property.cron.deactivate_property_job'),
     ('0 */10 * * *', 'payment.cron.delete_pending_payments_job'),
     ('* * * * *', 'account.cron.subscribe_free_account_job'),
 ]
@@ -289,11 +290,17 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'https://assets.portal.kedeshlimited.com/static/' 
-STATIC_ROOT = os.path.join(BASE_DIR, '../../assets.portal.kedeshlimited.com/static')
+# STATIC_URL = 'https://assets.portal.kedeshlimited.com/static/' 
+# STATIC_ROOT = os.path.join(BASE_DIR, '../../assets.portal.kedeshlimited.com/static')
 
-MEDIA_URL = 'https://assets.portal.kedeshlimited.com/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, '../../assets.portal.kedeshlimited.com/media/')
+# MEDIA_URL = 'https://assets.portal.kedeshlimited.com/media/'
+# MEDIA_ROOT = os.path.join(BASE_DIR, '../../assets.portal.kedeshlimited.com/media/')
+
+STATIC_URL = env('STATIC_URL')
+STATIC_ROOT = env('STATIC_ROOT')
+
+MEDIA_URL = env('MEDIA_URL')
+MEDIA_ROOT = env('MEDIA_ROOT')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

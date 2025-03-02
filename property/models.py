@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.db.models import QuerySet
 
+from account.models import Account
 from house.enums.availability_status import STATUS
 from house.enums.category import CATEGORY
 from house.enums.condition import CONDITION
@@ -15,6 +16,11 @@ from property.enums.rental_duration import RENTAL_DURATION
 from house.enums.security_feature import SECURITY_FEATURES
 from location.models import Location
 from user.models import Agent
+import logging
+from django.db.models import QuerySet, Q, Count, When, Case, IntegerField, Value, OuterRef, Exists
+
+
+logger = logging.getLogger(__name__)
 
 class Property(models.Model):
     property_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -32,7 +38,7 @@ class Property(models.Model):
     furnishing_status = models.CharField(max_length=255, choices=FURNISHING_STATUS.choices(), default=FURNISHING_STATUS.default(), null=False, blank=False)
     status = models.CharField(max_length=255, choices=STATUS.choices(), default=STATUS.default(), null=False, blank=False)
     is_active_account = models.BooleanField(default=True)
-    is_locked = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
     listing_date = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -60,8 +66,13 @@ class Property(models.Model):
 
     def save(self, *args, **kwargs):
         """Run model validation before saving."""
-        self.full_clean()
+        skip_validation = kwargs.pop('skip_validation', False)
+        
+        if not skip_validation:
+            self.full_clean() 
+        
         super().save(*args, **kwargs)
+
         
     @classmethod
     def demo_properties(cls) -> 'QuerySet[Property]':
@@ -70,7 +81,24 @@ class Property(models.Model):
         Returns:
             QuerySet[Property]: Property instances queryset
         """
-        return cls.objects.filter(status=STATUS.AVAILABLE.value, is_active_account=True, is_locked=False).order_by('-listing_date')
+        paid_account_exists = Account.objects.filter(
+            agent=OuterRef("agent"),
+            is_active=True,
+            plan__is_free=False
+        ).values("pk")
+
+        queryset = cls.objects.filter(is_active_account = True, is_deleted = False).annotate(
+            is_paid=Case(
+                When(Exists(paid_account_exists), then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField()
+            ),
+            image_count=Count('images', distinct=True) 
+        ).filter(image_count__gt=0) 
+
+        queryset = queryset.select_related('location').order_by('-is_paid', '-listing_date')
+
+        return queryset
         
     @classmethod
     def mark_property_rented(cls, property_id: uuid.UUID, agent: Agent) -> None:
@@ -168,11 +196,11 @@ class Property(models.Model):
         """
         inactive_houses = None
         
-        inactive_houses = cls.objects.filter(is_active_account=False, is_locked=False, status=STATUS.AVAILABLE.value, agent=agent)
+        inactive_houses = cls.objects.filter(is_active_account=False, is_deleted=False, agent=agent)
         
         for house in inactive_houses:
             house.is_active_account = True
-            house.save(update_fields=["is_active_account"])
+            house.save(update_fields=["is_active_account"], skip_validation=True)
             
     @classmethod
     def deactivate_active_properties(cls, agent: Agent):
@@ -184,8 +212,8 @@ class Property(models.Model):
         """
         inactive_houses = None
         
-        inactive_houses = cls.objects.filter(is_active_account=True, is_locked=False, status=STATUS.AVAILABLE.value, agent=agent)
+        inactive_houses = cls.objects.filter(is_active_account=True, is_deleted=False, agent=agent)
         
         for house in inactive_houses:
             house.is_active_account = False
-            house.save(update_fields=["is_active_account"])
+            house.save(update_fields=["is_active_account"], skip_validation=True)

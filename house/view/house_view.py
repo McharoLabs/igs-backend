@@ -134,7 +134,7 @@ class HouseViewSet(viewsets.ModelViewSet):
                             
                 PropertyImage.save(property=property, images=validated_data.get("images"))
 
-                response_serializer = DetailResponseSerializer({"detail": "Umefanikiwa kupakia nyumba"})
+                response_serializer = DetailResponseSerializer({"detail": "Umefanikiwa kupakia taarifa za nyumba"})
                 return Response(response_serializer.data, status=status.HTTP_201_CREATED)
         except ValidationError as e:
             logger.error(f"Validation error: {e}", exc_info=True)
@@ -285,7 +285,7 @@ class HouseViewSet(viewsets.ModelViewSet):
                                     'total_dining_room': openapi.Schema(type=openapi.TYPE_INTEGER),
                                     'total_bath_room': openapi.Schema(type=openapi.TYPE_INTEGER),
                                     'status': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'is_locked': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                    'is_deleted': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                                     'listing_date': openapi.Schema(type=openapi.TYPE_STRING),
                                     'updated_at': openapi.Schema(type=openapi.TYPE_STRING),
                                 }

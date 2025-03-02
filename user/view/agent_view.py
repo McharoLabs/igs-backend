@@ -75,7 +75,7 @@ class AgentViewSet(viewsets.ViewSet):
                 avatar=validated_data.get("avatar")
             )
             
-            return Response(data={"detail": "Hongera, umefanikiwa kujisajili, tafadhali ingia na utasubiri dakika 1 na utapokea ujumbe mfupi waku amilishwa kwa akaunti yako na utaweza tangaza nasi mali zako"}, status=status.HTTP_201_CREATED)
+            return Response(data={"detail": "Hongera, umefanikiwa kujisajili. Ndani ya dakika moja utapokea ujumbe wa meseji, tafadhali soma kwa umakini na baada ya hapo unaweza ingia kwenye mfumo na kutanganza nasi"}, status=status.HTTP_201_CREATED)
         except ValidationError as e:
             logger.error(f"Error during agent registration: {e}", exc_info=True)
             return Response(data={"detail": e.message}, status=status.HTTP_400_BAD_REQUEST)

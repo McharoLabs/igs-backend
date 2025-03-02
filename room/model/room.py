@@ -9,7 +9,7 @@ from location.models import Location
 from property.models import Property
 from user.models import Agent
 from django.core.exceptions import PermissionDenied
-from django.db.models import QuerySet, Q, Count
+from django.db.models import QuerySet, Q, Count, When, Case, IntegerField, Value, OuterRef, Exists
 
 class Room(Property):
     room_category = models.CharField(max_length=100, choices=ROOM_CATEGORY.choices(), default=ROOM_CATEGORY.default(), null=False, blank=False)
@@ -177,6 +177,21 @@ class Room(Property):
         if street:
             filters &= Q(**{"location__street__icontains": street.lower()})
 
-        return cls.objects.filter(filters).select_related('location').order_by('-listing_date').annotate(
-            image_count=Count('images', distinct=True)
-        ).filter(image_count__gt=0)
+        paid_account_exists = Account.objects.filter(
+            agent=OuterRef("agent"),
+            is_active=True,
+            plan__is_free=False
+        ).values("pk")
+
+        queryset = cls.objects.filter(filters).annotate(
+            is_paid=Case(
+                When(Exists(paid_account_exists), then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField()
+            ),
+            image_count=Count('images', distinct=True) 
+        ).filter(image_count__gt=0) 
+
+        queryset = queryset.select_related('location').order_by('-is_paid', '-listing_date')
+
+        return queryset

@@ -11,6 +11,10 @@ class Agent(User):
         
     def __str__(self) -> str:
         return f"{self.first_name} {self.middle_name} {self.last_name}"
+    
+    @property
+    def full_name(self) -> str:
+        return f"{self.first_name} {self.middle_name} {self.last_name}"
         
     @classmethod
     def get_agent_by_phone_number(cls, phone_number: str) -> 'Agent':

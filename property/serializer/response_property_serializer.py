@@ -37,7 +37,7 @@ class ResponseDemoPropertySerializer(serializers.ModelSerializer):
     images = serializers.SerializerMethodField()
     is_active_account = serializers.BooleanField(write_only=True)
     agent = serializers.UUIDField(write_only=True)
-    is_locked = serializers.BooleanField(write_only=True)
+    is_deleted = serializers.BooleanField(write_only=True)
     property_type = serializers.SerializerMethodField()
 
     class Meta:

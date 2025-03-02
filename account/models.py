@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 class Account(models.Model):
     account_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    agent = models.ForeignKey(Agent, on_delete=models.SET_NULL, null=True, related_name="agent_account")
-    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.SET_NULL, null=True, blank=True)  # Use string-based reference
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, null=True, related_name="agent_account")
+    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.SET_NULL, null=True, blank=True)
     start_date = models.DateTimeField(default=timezone.now)
     end_date = models.DateTimeField()
     is_active = models.BooleanField(default=True)
@@ -34,7 +34,7 @@ class Account(models.Model):
         plan_name = self.plan.name if self.plan else 'No Plan'
         return f"Account for {owner} ({plan_name})"
     
-    def expire_account(self) -> None:
+    def expire_account(self) -> bool:
         """
         Expires the account by setting `is_active` to False, only if the account is still active 
         and the `end_date` is in the future.
@@ -42,8 +42,11 @@ class Account(models.Model):
         if self.is_active:
             if self.end_date <= timezone.now():
                 self.is_active = False
-                self.save()
+                self.save(update_fields=['is_active'])
                 logger.info(f"Account {self.account_id} expired and deactivated.")
+                return True
+            return False
+        return False
 
     def account_owner(self) -> str:
         """Returns the full name of the account owner (agent)"""
@@ -145,10 +148,11 @@ class Account(models.Model):
         return cls.objects.filter(is_active=True)
     
     @classmethod
-    def get_inactive_accounts(cls) -> 'QuerySet[Account]':
-        """Retrieve all inactive accounts
+    def get_inactive_accounts(cls) -> QuerySet['Account']:
+        """Retrieve all inactive accounts deactivated within the last 7 days.
 
         Returns:
-            QuerySet[Account]: QuerySet of inactive account objects if found, otherwise None
+            QuerySet[Account]: QuerySet of inactive account objects if found, otherwise an empty queryset.
         """
-        return cls.objects.filter(is_active=False)
+        seven_days_ago = timezone.now() - timedelta(days=7)
+        return cls.objects.filter(is_active=False, end_date__gte=seven_days_ago)
