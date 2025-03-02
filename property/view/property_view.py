@@ -212,6 +212,7 @@ class PropertyViewSet(viewsets.ModelViewSet):
                                             'region': openapi.Schema(type=openapi.TYPE_STRING),
                                             'district': openapi.Schema(type=openapi.TYPE_STRING),
                                             'ward': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'street': openapi.Schema(type=openapi.TYPE_STRING),
                                             'latitude': openapi.Schema(type=openapi.TYPE_STRING),
                                             'longitude': openapi.Schema(type=openapi.TYPE_STRING),
                                         }

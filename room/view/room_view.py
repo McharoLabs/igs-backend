@@ -108,6 +108,7 @@ class RoomViewSet(viewsets.ModelViewSet):
                     region=district.region.name,
                     district=district.name,
                     ward=validated_data.get("ward"),
+                    street=validated_data.get("street"),
                     latitude=validated_data.get("latitude"),
                     longitude=validated_data.get("longitude")
                 )
@@ -131,7 +132,7 @@ class RoomViewSet(viewsets.ModelViewSet):
                 
                 PropertyImage.save(property=property, images=validated_data.get("images"))
 
-                response_serializer = DetailResponseSerializer({"detail": "Room uploaded successful"})
+                response_serializer = DetailResponseSerializer({"detail": "Umefanikiwa kupakia taarifa chumba"})
                 return Response(response_serializer.data, status=status.HTTP_201_CREATED)
             
         except ValidationError as e:
@@ -181,6 +182,7 @@ class RoomViewSet(viewsets.ModelViewSet):
                                             'region': openapi.Schema(type=openapi.TYPE_STRING),
                                             'district': openapi.Schema(type=openapi.TYPE_STRING),
                                             'ward': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'street': openapi.Schema(type=openapi.TYPE_STRING),
                                             'latitude': openapi.Schema(type=openapi.TYPE_STRING),
                                             'longitude': openapi.Schema(type=openapi.TYPE_STRING),
                                         }
@@ -338,6 +340,7 @@ class RoomViewSet(viewsets.ModelViewSet):
                                 'region': openapi.Schema(type=openapi.TYPE_STRING),
                                 'district': openapi.Schema(type=openapi.TYPE_STRING),
                                 'ward': openapi.Schema(type=openapi.TYPE_STRING),
+                                'street': openapi.Schema(type=openapi.TYPE_STRING),
                                 'latitude': openapi.Schema(type=openapi.TYPE_STRING),
                                 'longitude': openapi.Schema(type=openapi.TYPE_STRING),
                             }
@@ -419,6 +422,7 @@ class RoomViewSet(viewsets.ModelViewSet):
                                             'region': openapi.Schema(type=openapi.TYPE_STRING),
                                             'district': openapi.Schema(type=openapi.TYPE_STRING),
                                             'ward': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'street': openapi.Schema(type=openapi.TYPE_STRING),
                                             'latitude': openapi.Schema(type=openapi.TYPE_STRING),
                                             'longitude': openapi.Schema(type=openapi.TYPE_STRING),
                                         }
@@ -482,6 +486,12 @@ class RoomViewSet(viewsets.ModelViewSet):
                 'district', openapi.IN_QUERY, description="District of the house location", type=openapi.TYPE_STRING
             ),
             openapi.Parameter(
+                'ward', openapi.IN_QUERY, description="Ward of the house location", type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'street', openapi.IN_QUERY, description="Street of the house location", type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
                 'minPrice', openapi.IN_QUERY, description="Minimum price of the house", type=openapi.TYPE_STRING
             ),
             openapi.Parameter(
@@ -496,6 +506,8 @@ class RoomViewSet(viewsets.ModelViewSet):
         district: str = request.GET.get('district')
         min_price: str = request.GET.get('minPrice')
         max_price: str = request.GET.get('maxPrice')
+        street: str = request.GET.get('street')
+        ward: str = request.GET.get('ward')
 
         try:
             min_price = Decimal(min_price) if min_price else None
@@ -504,17 +516,17 @@ class RoomViewSet(viewsets.ModelViewSet):
             return Response({"detail": "Invalid price format."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            houses = Room.room_filter(room_category=room_category, region=region, district=district, min_price=min_price, max_price=max_price)
+            rooms = Room.room_filter(room_category=room_category, region=region, district=district, min_price=min_price, max_price=max_price, street=street, ward=ward)
             
             
             paginator = PageNumberPagination()
             
-            page = paginator.paginate_queryset(houses, request)
+            page = paginator.paginate_queryset(rooms, request)
             if page is not None:
                 serializer = ResponseRoomSerializer(page, many=True)
                 return paginator.get_paginated_response(serializer.data)
 
-            serializer = ResponseRoomSerializer(houses, many=True)
+            serializer = ResponseRoomSerializer(rooms, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except ValueError as e:
             logger.error(f"Validation error occurred: {e}", exc_info=True)

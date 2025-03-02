@@ -22,6 +22,7 @@ class RequestHouseSerializer(serializers.Serializer):
     total_bath_room = serializers.IntegerField(required=True)
     district_id = serializers.UUIDField(required=True)
     ward = serializers.CharField(required=True, max_length=255)
+    street = serializers.CharField(required=True, max_length=255)
     latitude = serializers.DecimalField(max_digits=11, decimal_places=8, required=False)
     longitude = serializers.DecimalField(max_digits=11, decimal_places=8, required=False)
     images = serializers.ListField(child=serializers.ImageField(), required=True)
