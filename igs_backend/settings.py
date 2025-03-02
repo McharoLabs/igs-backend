@@ -34,11 +34,34 @@ BOOKING_FEE = env('BOOKING_FEE')
 PROPERTY_IMAGE_BASE_URL = env('PROPERTY_IMAGE_BASE_URL')
 SITE_IP = env('SITE_IP')
 
+APP_BASE = env('APP_BASE')
+WEB_HOOK_URL = env('WEB_HOOK_URL')
+
+ZENOPAY_BASE=env('ZENOPAY_BASE')
+ACCOUNT_ID=env('ACCOUNT_ID')
+ZENOPAY_API_KEY=env('ZENOPAY_API_KEY')
+ZENOPAY_SECRET_KEY=env('ZENOPAY_SECRET_KEY')
+
+# Message configuration
+MESSAGE_BASE_URL = env('MESSAGE_BASE_URL')
+MESSAGE_PASSWORD = env('MESSAGE_PASSWORD')
+MESSAGE_USERNAME = env('MESSAGE_USERNAME')
+MESSAGE_SINGLE_URL = env('MESSAGE_SINGLE_URL')
+WEB_URL = env('WEB_URL')
+MESSAGE_MULTI = env('MESSAGE_MULTI')
+MESSAGE_FROM = env('MESSAGE_FROM')
+DERIVERY_REPORT_URL = env('DERIVERY_REPORT_URL')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', SITE_IP]
+ALLOWED_HOSTS = [
+    'portal.kedeshlimited.com',
+    '.kedeshlimited.com',
+    '173.236.213.76',
+]
+
+
 # ALLOWED_HOSTS = []
 
 
@@ -66,8 +89,10 @@ INSTALLED_APPS = [
     "booking",
     "property",
     "room",
+    "message",
     "subscription_plan",
-    "property_images"
+    "property_images",
+    "settings",
 ]
 
 # AUTH_USER_MODEL = "authentication.User"
@@ -85,12 +110,12 @@ MIDDLEWARE = [
 ]
 
 CRONJOBS = [
-    ('* * * * *', 'booking.cron.my_scheduled_job'),
-    ('* * * * *', 'account.cron.expire_account_job'),
-    ('* * * * *', 'house.cron.activate_house_job'),
-    ('* * * * *', 'house.cron.deactivate_house_job'),
-    ('* * * * *', 'payment.cron.auto_activate_account_job'),
-    ('* * * * *', 'payment.cron.auto_mark_room_booked_job')
+    # ('* * * * *', 'booking.cron.my_scheduled_job'),
+    # ('* * * * *', 'account.cron.expire_account_job'),
+    # ('* * * * *', 'house.cron.activate_house_job'),
+    # ('* * * * *', 'house.cron.deactivate_house_job'),
+    ('0 */10 * * *', 'payment.cron.delete_pending_payments_job'),
+    ('* * * * *', 'account.cron.subscribe_free_account_job'),
 ]
 
 log_directory = BASE_DIR / 'logs'
@@ -168,7 +193,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 20
+    'PAGE_SIZE': 21
 }
 
 SIMPLE_JWT = {
@@ -248,11 +273,11 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = env("STATIC_URL")
-STATIC_ROOT =env("STATIC_ROOT")
+STATIC_URL = 'https://assets.portal.kedeshlimited.com/static/' 
+STATIC_ROOT = os.path.join(BASE_DIR, '../../assets.portal.kedeshlimited.com/static')
 
-MEDIA_URL = env("MEDIA_URL")
-MEDIA_ROOT = env("MEDIA_ROOT")
+MEDIA_URL = 'https://assets.portal.kedeshlimited.com/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, '../../assets.portal.kedeshlimited.com/media/')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -272,3 +297,7 @@ CORS_ALLOWED_ORIGINS = [
 # CSRF_TRUSTED_ORIGINS = [
 #     "http://172.16.16.60:8080",
 # ]
+
+CSRF_TRUSTED_ORIGINS = ['https://portal.kedeshlimited.com']
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') 
