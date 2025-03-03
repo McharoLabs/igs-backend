@@ -51,7 +51,7 @@ class Property(models.Model):
         return f"Property {self.property_id}"
     
     def available(self) -> bool:
-        return self.status == STATUS.AVAILABLE.value
+        return self.status == STATUS.AVAILABLE.value and not self.is_deleted
     
     def mark_booked(self) -> None:
         self.status = STATUS.BOOKED.value
@@ -113,6 +113,7 @@ class Property(models.Model):
     @classmethod
     def mark_property_available(cls, property_id: uuid.UUID, agent: Agent) -> None:
         property = cls.objects.filter(
+            is_deleted = False,
             property_id=property_id,
             agent=agent,
             status__in=[STATUS.RENTED.value, STATUS.SOLD.value, STATUS.BOOKED.value]
@@ -144,7 +145,7 @@ class Property(models.Model):
         Returns:
             int: Total number of properties
         """
-        return cls.objects.filter(agent=agent).count()
+        return cls.objects.filter(agent=agent, is_deleted = False).count()
     
     @classmethod
     def get_property_by_id(cls, property_id: uuid.UUID) -> 'Property | None':
@@ -156,7 +157,7 @@ class Property(models.Model):
         Returns:
             Property | None: Instance of property that matches the property ID if found, otherwise None
         """
-        return cls.objects.filter(property_id=property_id).first()
+        return cls.objects.filter(property_id=property_id, is_deleted = False).first()
     
     @classmethod
     def get_property_for_booking(cls, property_id: uuid.UUID) -> 'Property | None':
@@ -168,7 +169,7 @@ class Property(models.Model):
         Returns:
             Property | None: Instance of property that matches the property ID if found, otherwise None
         """
-        return cls.objects.filter(property_id=property_id, status=STATUS.AVAILABLE.value).first()
+        return cls.objects.filter(property_id=property_id, status=STATUS.AVAILABLE.value, is_deleted = False).first()
     
     @classmethod
     def get_agent_property_by_id(cls, agent: Agent, property_id: uuid.UUID) -> 'Property | None':
@@ -181,7 +182,7 @@ class Property(models.Model):
         Returns:
             Property | None: Property instance that matches the criteria provided if found, Otherwise None
         """
-        return cls.objects.filter(agent=agent, property_id=property_id).first()
+        return cls.objects.filter(agent=agent, property_id=property_id, is_deleted = False).first()
     
     @classmethod
     def activate_inactive_properties(cls, agent: Agent):

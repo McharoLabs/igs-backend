@@ -8,7 +8,7 @@ from house.enums.room_category import ROOM_CATEGORY
 from location.models import Location
 from property.models import Property
 from user.models import Agent
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import QuerySet, Q, Count, When, Case, IntegerField, Value, OuterRef, Exists
 
 class Room(Property):
@@ -17,6 +17,19 @@ class Room(Property):
     class Meta:
         db_table = 'room'
         app_label = 'room'
+        
+    def delete(self) -> None:
+        self.is_deleted = True
+        self.save(update_fields=["is_deleted"], skip_validation=True)
+        
+    @classmethod
+    def soft_delete_room(cls, property_id: uuid.UUID, agent: Agent) -> None:
+        house = cls.objects.filter(property_id=property_id, agent=agent).first()
+        
+        if house is None:
+            raise ValidationError(message="Mali haipo kwenye mfumo wetu")
+        
+        house.delete()
     
     @classmethod
     def save_room(cls, agent: Agent, location: Location, price: str, description: str, condition: str,
@@ -86,7 +99,7 @@ class Room(Property):
         Returns:
             Room or None: The room instance that matches the given property ID, or None if no match is found.
         """
-        return cls.objects.filter(property_id=property_id).first()
+        return cls.objects.filter(property_id=property_id, is_deleted = False).first()
     
     @classmethod
     def get_agent_room(cls, agent: Agent, property_id: uuid.UUID) -> 'Room':
@@ -99,7 +112,7 @@ class Room(Property):
         Returns:
             Room or None: The room instance that matches the given property ID and agent, or None if no matches is found
         """
-        return cls.objects.filter(agent=agent, property_id=property_id).first()
+        return cls.objects.filter(agent=agent, property_id=property_id, is_deleted = False).first()
     
     @classmethod
     def get_agent_rooms(cls, agent: Agent) -> 'QuerySet[Room]':
@@ -111,7 +124,7 @@ class Room(Property):
         Returns:
             QuerySet[Room]: A queryset containing all rooms associated with the given agent.
         """
-        return cls.objects.filter(agent=agent)
+        return cls.objects.filter(agent=agent, is_deleted = False).order_by('-listing_date')
     
     @classmethod
     def get_rooms_with_no_images(cls, agent: Agent) -> 'QuerySet[Room]':
@@ -123,7 +136,7 @@ class Room(Property):
         Returns:
             QuerySet[Room]: A queryset of rooms filtered based on the given criteria.
         """
-        return cls.objects.filter(agent=agent).annotate(
+        return cls.objects.filter(agent=agent, is_deleted = False).annotate(
             image_count = Count('images', distinct=True)
         ).filter(image_count = 0)
     
@@ -153,7 +166,8 @@ class Room(Property):
         filters = Q(
             status=STATUS.AVAILABLE.value,
             is_active_account=True,
-            category=CATEGORY.RENTAL.value
+            category=CATEGORY.RENTAL.value,
+            is_deleted = False
         )
         
         if room_category:

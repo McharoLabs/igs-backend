@@ -2,7 +2,7 @@ from decimal import Decimal, InvalidOperation
 import uuid
 from django.db import models
 from django.apps import apps
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 
 from account.models import Account
 from house.enums.availability_status import STATUS
@@ -14,6 +14,7 @@ import logging
 from django.db.models.query import QuerySet
 from django.db.models import QuerySet, Q, Count, When, Case, IntegerField, Value, OuterRef, Exists
 
+
 logger = logging.getLogger(__name__)
 
 class House(Property):
@@ -24,11 +25,15 @@ class House(Property):
     class Meta:
         db_table = 'house'
         app_label = 'house'
+        
+    def delete(self) -> None:
+        self.is_deleted = True
+        self.save(update_fields=["is_deleted"], skip_validation=True)
     
     def mark_booked(self) -> None:
         """Update the status of the house to 'booked'."""
         self.status = STATUS.BOOKED.value
-        self.save()
+        self.save(update_fields=["status"])
         
     @classmethod
     def save_house(
@@ -125,7 +130,7 @@ class House(Property):
         Returns:
             House | None: House instance if found, Otherwise None
         """
-        return cls.objects.filter(property_id=property_id).first()
+        return cls.objects.filter(property_id=property_id, is_deleted = False).first()
     
     @classmethod
     def get_agent_house(cls, agent: Agent, property_id: uuid.UUID) -> 'House':
@@ -139,7 +144,7 @@ class House(Property):
             House: The house instance if found, otherwise None.
         """
         
-        return cls.objects.filter(property_id=property_id, agent=agent).first()
+        return cls.objects.filter(property_id=property_id, agent=agent, is_deleted = False).first()
     
     @classmethod
     def get_agent_houses(cls, agent: Agent) -> 'QuerySet[House]':
@@ -151,7 +156,16 @@ class House(Property):
         Returns:
             QuerySet[House]: QuerySet of house instance
         """
-        return cls.objects.filter(agent=agent).order_by('-listing_date')
+        return cls.objects.filter(agent=agent, is_deleted = False).order_by('-listing_date')
+    
+    @classmethod
+    def soft_delete_house(cls, property_id: uuid.UUID, agent: Agent) -> None:
+        house = cls.objects.filter(property_id=property_id, agent=agent).first()
+        
+        if house is None:
+            raise ValidationError(message="Mali haipo kwenye mfumo wetu")
+        
+        house.delete()
     
     @classmethod
     def house_filter(

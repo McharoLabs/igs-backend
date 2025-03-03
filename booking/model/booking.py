@@ -49,7 +49,7 @@ class Booking(models.Model):
         """
         booking: Booking | None = None
 
-        booking = cls.objects.filter(property__status=STATUS.BOOKED.value, property__agent=agent, booking_id=booking_id).first()
+        booking = cls.objects.filter(property__status=STATUS.BOOKED.value, property__is_deleted = False, property__agent=agent, booking_id=booking_id).first()
         
         if booking:
             if not booking.has_owner_read:
@@ -61,7 +61,7 @@ class Booking(models.Model):
     @classmethod
     def get_booked_properties(cls, agent: Agent, customer_name: str = None) -> 'QuerySet[Booking]':
         """Retrieve house bookings for an agent who has booked a house, with optional search by customer name."""
-        queryset = cls.objects.filter(property__status=STATUS.BOOKED.value, property__agent=agent)
+        queryset = cls.objects.filter(property__status=STATUS.BOOKED.value, property__is_deleted = False, property__agent=agent)
 
         if customer_name:
             queryset = queryset.filter(Q(customer_name__icontains=customer_name))

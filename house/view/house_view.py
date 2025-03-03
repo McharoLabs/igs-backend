@@ -39,7 +39,7 @@ class HouseViewSet(viewsets.ModelViewSet):
         """
         Custom method to define permissions for each action.
         """
-        if self.action == 'add_house' or self.action == 'list_houses' or self.action == 'retrieve_house':
+        if self.action == 'add_house' or self.action == 'list_houses' or self.action == 'retrieve_house' or self.action == 'soft_delete_house':
             permission_classes = [permissions.IsAuthenticated, IsAgent]
         else:
             permission_classes = [permissions.AllowAny]
@@ -48,12 +48,57 @@ class HouseViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         return House.objects.none()
+    
+    @swagger_auto_schema(
+        operation_description="Soft delete house property by providing property id",
+        operation_summary="Soft delete property ",
+        method="delete",
+        tags=["House"],
+        responses={
+            200: openapi.Response(
+                description="Deleted successful",
+                schema=DetailResponseSerializer(many=False)
+            ), 
+            404: openapi.Response(
+                description="Not found",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            401: openapi.Response(
+                description="Unauthorized",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            500: openapi.Response(
+                description="Internal serevr error",
+                schema=DetailResponseSerializer(many=False)
+            ),
+        },
+    )
+    @action(detail=True, methods=['delete'])
+    def soft_delete_house(self, request: HttpRequest, pk: uuid.UUID=None):
+        user = cast(User, request.user)
+        """Delete house by ID."""
+        try:
+            
+            agent: Agent | None = Agent.get_agent_by_phone_number(phone_number=user.phone_number)
+            
+            if agent is None:
+                return Response(data={"detail": "Huruhusiwi kufanya hii kazi"}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            House.soft_delete_house(property_id=pk, agent=agent)
+
+            return Response(data={"detail": "Umefanikiwa kufuta nyumba"}, status=status.HTTP_200_OK)
+        except ValidationError as e:
+           logger.error(f"Error occured while deleting property: {e}", exc_info=True)
+           return Response(data={"detail": str(e.messages)}, status=status.HTTP_404_NOT_FOUND) 
+        except Exception as e:
+          logger.error(f"Un expected error occured while getting house with id {pk}", exc_info=True)
+          return Response(data={"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @swagger_auto_schema(
         operation_description="Add a new house by providing the necessary details such as agent, location, price, etc.",
         operation_summary="Create New House",
         method="post",
-        tags=["house"],
+        tags=["House"],
         request_body=RequestHouseSerializer,
         responses={
             201: openapi.Response(
@@ -160,7 +205,7 @@ class HouseViewSet(viewsets.ModelViewSet):
         operation_description="Retrieve a house by its ID",
         operation_summary="Retrieve House",
         method="get",
-        tags=["house"],
+        tags=["House"],
         responses={
             200: ResponseHouseDetailSerializer(many=False), 
             404: openapi.Response(
@@ -203,7 +248,7 @@ class HouseViewSet(viewsets.ModelViewSet):
         operation_description="Retrieve house details for the tenant",
         operation_summary="Retrieve House Detail For Tenant",
         method="get",
-        tags=["house"],
+        tags=["House"],
         responses={
             200: ResponseHouseDetailSerializer(many=False), 
             404: openapi.Response(
@@ -239,7 +284,7 @@ class HouseViewSet(viewsets.ModelViewSet):
         operation_description="List all houses",
         operation_summary="List Houses",
         method="get",
-        tags=["house"],
+        tags=["House"],
         responses={
             200: openapi.Response(
                 description="A paginated list of houses",
@@ -329,7 +374,7 @@ class HouseViewSet(viewsets.ModelViewSet):
         operation_description="List filtered houses",
         operation_summary="Filtered Houses",
         method="get",
-        tags=["house"],
+        tags=["House"],
         responses={
             200: openapi.Response(
                 description="A paginated list of houses",

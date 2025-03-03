@@ -40,7 +40,7 @@ class RoomViewSet(viewsets.ModelViewSet):
         """
         Custom method to define permissions for each action.
         """
-        if self.action == 'add_room' or self.action == 'room_list' or self.action == 'retrieve_room':
+        if self.action == 'add_room' or self.action == 'room_list' or self.action == 'soft_delete_room':
             permission_classes = [permissions.IsAuthenticated, IsAgent]
         else:
             permission_classes = [permissions.AllowAny]
@@ -51,10 +51,55 @@ class RoomViewSet(viewsets.ModelViewSet):
         return Room.objects.none()
     
     @swagger_auto_schema(
+        operation_description="Soft delete room property by providing property id",
+        operation_summary="Soft delete property ",
+        method="delete",
+        tags=["Room"],
+        responses={
+            200: openapi.Response(
+                description="Deleted successful",
+                schema=DetailResponseSerializer(many=False)
+            ), 
+            404: openapi.Response(
+                description="Not found",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            401: openapi.Response(
+                description="Unauthorized",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            500: openapi.Response(
+                description="Internal serevr error",
+                schema=DetailResponseSerializer(many=False)
+            ),
+        },
+    )
+    @action(detail=True, methods=['delete'])
+    def soft_delete_room(self, request: HttpRequest, pk: uuid.UUID=None):
+        user = cast(User, request.user)
+        """Delete house by ID."""
+        try:
+            
+            agent: Agent | None = Agent.get_agent_by_phone_number(phone_number=user.phone_number)
+            
+            if agent is None:
+                return Response(data={"detail": "Huruhusiwi kufanya hii kazi"}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            Room.soft_delete_room(property_id=pk, agent=agent)
+
+            return Response(data={"detail": "Umefanikiwa kufuta chumba"}, status=status.HTTP_200_OK)
+        except ValidationError as e:
+           logger.error(f"Error occured while deleting property: {e}", exc_info=True)
+           return Response(data={"detail": str(e.messages)}, status=status.HTTP_404_NOT_FOUND) 
+        except Exception as e:
+          logger.error(f"Un expected error occured while getting house with id {pk}", exc_info=True)
+          return Response(data={"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @swagger_auto_schema(
         operation_description="Add a new room by providing the necessary details such as agent, location, price, etc.",
         operation_summary="Create New Room",
         method="post",
-        tags=["room"],
+        tags=["Room"],
         request_body=RequestRoomSerializer,
         responses={
             201: openapi.Response(
@@ -159,7 +204,7 @@ class RoomViewSet(viewsets.ModelViewSet):
         operation_description="List all rooms",
         operation_summary="List Room",
         method="get",
-        tags=["room"],
+        tags=["Room"],
         responses={
             200: openapi.Response(
                 description="A paginated list of rooms",
@@ -245,7 +290,7 @@ class RoomViewSet(viewsets.ModelViewSet):
         operation_description="Retrieve a room by property ID and agent",
         operation_summary="Retrieve Agent Room",
         method="get",
-        tags=["room"],
+        tags=["Room"],
         responses={
             200: openapi.Response(
                 description="Retrieve a room",
@@ -325,7 +370,7 @@ class RoomViewSet(viewsets.ModelViewSet):
         operation_description="Retrieve room details for the tenant",
         operation_summary="Retrieve Room For tenant",
         method="get",
-        tags=["room"],
+        tags=["Room"],
         responses={
             200: openapi.Response(
                 description="Retrieve a room",
@@ -399,7 +444,7 @@ class RoomViewSet(viewsets.ModelViewSet):
         operation_description="List filtered rooms",
         operation_summary="Filtered Rooms",
         method="get",
-        tags=["room"],
+        tags=["Room"],
         responses={
             200: openapi.Response(
                 description="A paginated list of rooms",
