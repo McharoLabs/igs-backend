@@ -35,7 +35,7 @@ class DistrictViewSet(viewsets.ModelViewSet):
         operation_description="Add a new district by providing the district name and existing region id",
         operation_summary="Create New District",
         method="post",
-        tags=["District"],
+        tags=["Location"],
         request_body=RequestDistrictSerializer,
         responses={200: DetailResponseSerializer(many=False), 400: "Invalid input data"},
     )
@@ -75,7 +75,7 @@ class DistrictViewSet(viewsets.ModelViewSet):
         operation_description="Retrieve a district by its ID",
         operation_summary="Retrieve District",
         method="get",
-        tags=["District"],
+        tags=["Location"],
         responses={200: ResponseDistrictSerializer(many=False), 404: "District not found"},
     )
     @action(detail=True, methods=['get'])
@@ -91,7 +91,7 @@ class DistrictViewSet(viewsets.ModelViewSet):
         operation_description="Retrieve districts by region ID",
         operation_summary="Retrieve districts by region ID",
         method="get",
-        tags=["District"],
+        tags=["Location"],
         responses={
             200: ResponseDistrictSerializer(many=True),
             400: "Region is required",
@@ -130,7 +130,7 @@ class DistrictViewSet(viewsets.ModelViewSet):
         operation_description="List all districts",
         operation_summary="List Districts",
         method="get",
-        tags=["District"],
+        tags=["Location"],
         responses={200: ResponseDistrictSerializer(many=True)},
     )
     @action(detail=False, methods=['get'])

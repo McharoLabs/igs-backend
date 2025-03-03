@@ -9,8 +9,7 @@ from rest_framework.decorators import action
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from house.enums.room_category import ROOM_CATEGORY
-from location.models import District
-from location.models import Location
+from location.models import Location, Street
 from property.models import Property
 from property_images.models import PropertyImage
 from room.models import Room
@@ -21,7 +20,6 @@ from rest_framework.pagination import PageNumberPagination
 from django.db import transaction, DatabaseError
 from django.core.exceptions import PermissionDenied, ValidationError
 
-from user.enums.gender import GENDER
 from user.models import Agent
 from user.models import User
 
@@ -138,22 +136,22 @@ class RoomViewSet(viewsets.ModelViewSet):
 
 
         try:
-            district: District | None = District.get_district_by_id(district_id=validated_data.get("district_id"))
+            street: Street | None = Street.get_street_by_id(street_id=validated_data.get('street_id'))
             
-            if district is None:
-                return Response(data={"detail": "District not found"}, status=status.HTTP_404_NOT_FOUND)
+            if street is None:
+                return Response(data={"detail": "Street not found"}, status=status.HTTP_404_NOT_FOUND)
 
             agent: Agent | None = Agent.get_agent_by_phone_number(phone_number=user.phone_number)
             
             if agent is None:
-                return Response(data={"detail": "You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response(data={"detail": "Huruhusiwei kupakia mali, tafadhali ingia tena kwa number yako ya simu na password"}, status=status.HTTP_401_UNAUTHORIZED)
             
             with transaction.atomic():
                 location = Location.add_location(
-                    region=district.region.name,
-                    district=district.name,
-                    ward=validated_data.get("ward"),
-                    street=validated_data.get("street"),
+                    region=street.ward.district.region.name,
+                    district=street.ward.district.name,
+                    ward=street.ward.name,
+                    street = street.name,
                     latitude=validated_data.get("latitude"),
                     longitude=validated_data.get("longitude")
                 )

@@ -10,7 +10,7 @@ class Location(models.Model):
     region = models.CharField(max_length=255)
     district = models.CharField(max_length=255)
     ward = models.CharField(max_length=255)
-    street = models.CharField(max_length=255, null=True, blank=True)
+    street = models.CharField(max_length=255, null=False, blank=False)
     latitude = models.DecimalField(max_digits=11, decimal_places=8)
     longitude = models.DecimalField(max_digits=11, decimal_places=8)
 

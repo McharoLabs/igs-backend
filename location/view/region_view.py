@@ -34,7 +34,7 @@ class RegionViewSet(viewsets.ViewSet):
         operation_description="Add a new region by providing a new region name",
         operation_summary="Create New Region",
         method="post",
-        tags=["Region"],
+        tags=["Location"],
         request_body=RequestRegionSerializer,
         responses={200: DetailResponseSerializer(many=False), 400: "Invalid input data"},
     )
@@ -66,7 +66,7 @@ class RegionViewSet(viewsets.ViewSet):
         operation_description="Retrieve a region by its ID",
         operation_summary="Retrieve Region",
         method="get",
-        tags=["Region"],
+        tags=["Location"],
         responses={200: RequestRegionSerializer(many=False), 404: "Region not found"},
     )
     @action(detail=True, methods=['get'])
@@ -82,7 +82,7 @@ class RegionViewSet(viewsets.ViewSet):
         operation_description="List all regions",
         operation_summary="List Regions",
         method="get",
-        tags=["Region"],
+        tags=["Location"],
         responses={200: ResponseRegionSerializer(many=True)},
     )
     @action(detail=False, methods=['get'])

@@ -186,10 +186,10 @@ class Room(Property):
             filters &= Q(location__district__iexact=district)
 
         if ward:
-            filters &= Q(**{"location__ward__icontains": ward.lower()})
+            filters &= Q(location__ward__iexact=ward)
 
         if street:
-            filters &= Q(**{"location__street__icontains": street.lower()})
+            filters &= Q(location__street__iexact=street)
 
         paid_account_exists = Account.objects.filter(
             agent=OuterRef("agent"),

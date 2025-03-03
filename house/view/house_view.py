@@ -11,8 +11,7 @@ from drf_yasg import openapi
 from house.enums.category import CATEGORY
 from house.models import House
 from house.serializers import RequestHouseSerializer, ResponseHouseSerializer, ResponseHouseDetailSerializer, ResponseMyHouseSerializer
-from location.models import District
-from location.models import Location
+from location.models import Location, Street
 from property.models import Property
 from property_images.models import PropertyImage
 from shared.seriaizers import DetailResponseSerializer
@@ -137,22 +136,22 @@ class HouseViewSet(viewsets.ModelViewSet):
 
 
         try:
-            district: District | None = District.get_district_by_id(district_id=validated_data.get("district_id"))
+            street: Street | None = Street.get_street_by_id(street_id=validated_data.get('street_id'))
             
-            if district is None:
-                return Response(data={"detail": "District not found"}, status=status.HTTP_404_NOT_FOUND)
+            if street is None:
+                return Response(data={"detail": "Street not found"}, status=status.HTTP_404_NOT_FOUND)
 
             agent: Agent | None = Agent.get_agent_by_phone_number(phone_number=user.phone_number)
             
             if agent is None:
-                return Response(data={"detail": "You are not authorized to perform this task"}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response(data={"detail": "Huruhusiwei kupakia mali, tafadhali ingia tena kwa number yako ya simu na password"}, status=status.HTTP_401_UNAUTHORIZED)
             
             with transaction.atomic():
                 location = Location.add_location(
-                    region=district.region.name,
-                    district=district.name,
-                    ward=validated_data.get("ward"),
-                    street = validated_data.get("street"),
+                    region=street.ward.district.region.name,
+                    district=street.ward.district.name,
+                    ward=street.ward.name,
+                    street = street.name,
                     latitude=validated_data.get("latitude"),
                     longitude=validated_data.get("longitude")
                 )
