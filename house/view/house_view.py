@@ -11,7 +11,7 @@ from drf_yasg import openapi
 from house.enums.category import CATEGORY
 from house.models import House
 from house.serializers import RequestHouseSerializer, ResponseHouseSerializer, ResponseHouseDetailSerializer, ResponseMyHouseSerializer
-from location.models import Location, Street
+from location.models import Location, District
 from property.models import Property
 from property_images.models import PropertyImage
 from shared.seriaizers import DetailResponseSerializer
@@ -136,10 +136,10 @@ class HouseViewSet(viewsets.ModelViewSet):
 
 
         try:
-            street: Street | None = Street.get_street_by_id(street_id=validated_data.get('street_id'))
+            district: District | None = District.get_district_by_id(district_id=validated_data.get("district_id"))
             
-            if street is None:
-                return Response(data={"detail": "Street not found"}, status=status.HTTP_404_NOT_FOUND)
+            if district is None:
+                return Response(data={"detail": "District not found"}, status=status.HTTP_404_NOT_FOUND)
 
             agent: Agent | None = Agent.get_agent_by_phone_number(phone_number=user.phone_number)
             
@@ -148,10 +148,10 @@ class HouseViewSet(viewsets.ModelViewSet):
             
             with transaction.atomic():
                 location = Location.add_location(
-                    region=street.ward.district.region.name,
-                    district=street.ward.district.name,
-                    ward=street.ward.name,
-                    street = street.name,
+                    region=district.region.name,
+                    district=district.name,
+                    ward=validated_data.get("ward"),
+                    street = validated_data.get("street"),
                     latitude=validated_data.get("latitude"),
                     longitude=validated_data.get("longitude")
                 )
