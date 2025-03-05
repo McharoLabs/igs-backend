@@ -46,30 +46,14 @@ MESSAGE_PASSWORD = env('MESSAGE_PASSWORD')
 MESSAGE_USERNAME = env('MESSAGE_USERNAME')
 MESSAGE_SINGLE_URL = env('MESSAGE_SINGLE_URL')
 MESSAGE_FROM = env('MESSAGE_FROM')
-DERIVERY_REPORT_URL = env('DERIVERY_REPORT_URL')
+DELIVERY_REPORT_URL = env('DELIVERY_REPORT_URL')
 WEB_URL = env('WEB_URL')
 MESSAGE_MULTI = env('MESSAGE_MULTI')
+MESSAGE_BALANCE = env('MESSAGE_BALANCE')
 
-APP_BASE = env('APP_BASE')
-WEB_HOOK_URL = env('WEB_HOOK_URL')
-
-ZENOPAY_BASE=env('ZENOPAY_BASE')
-ACCOUNT_ID=env('ACCOUNT_ID')
-ZENOPAY_API_KEY=env('ZENOPAY_API_KEY')
-ZENOPAY_SECRET_KEY=env('ZENOPAY_SECRET_KEY')
-
-# Message configuration
-MESSAGE_BASE_URL = env('MESSAGE_BASE_URL')
-MESSAGE_PASSWORD = env('MESSAGE_PASSWORD')
-MESSAGE_USERNAME = env('MESSAGE_USERNAME')
-MESSAGE_SINGLE_URL = env('MESSAGE_SINGLE_URL')
-WEB_URL = env('WEB_URL')
-MESSAGE_MULTI = env('MESSAGE_MULTI')
-MESSAGE_FROM = env('MESSAGE_FROM')
-DERIVERY_REPORT_URL = env('DERIVERY_REPORT_URL')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [
     'portal.kedeshlimited.com',
@@ -133,6 +117,7 @@ CRONJOBS = [
     ('* * * * *', 'property.cron.deactivate_property_job'),
     ('0 */10 * * *', 'payment.cron.delete_pending_payments_job'),
     ('* * * * *', 'account.cron.subscribe_free_account_job'),
+    ('* * * * *', 'message.cron.check_message_balance_job'),
 ]
 
 log_directory = BASE_DIR / 'logs'

@@ -288,7 +288,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         validated_data = request_serializer.validated_data
 
         property = Property.get_property_for_booking(property_id=validated_data.get("property_id"))
-        siteSettings: SiteSettings | None = SiteSettings.get_company_settings()
+        siteSettings: SiteSettings | None = SiteSettings.company_settings()
         
         if not property:
             return Response(data={"detail": "Property not found"}, status=status.HTTP_404_NOT_FOUND)

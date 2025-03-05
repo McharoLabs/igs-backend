@@ -6,12 +6,14 @@ from django.core.exceptions import ValidationError
 
 import logging
 
+from utils.phone_number import validate_phone_number
+
 
 logger = logging.getLogger(__name__)
 
 class SiteSettings(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    support_phone = models.CharField(max_length=100, null=False, blank=False)
+    support_phone = models.CharField(max_length=100, validators=[validate_phone_number], null=False, blank=False)
     support_email = models.CharField(max_length=100, null=False, blank=False)
     headquarters = models.CharField(max_length=255, null=False, blank=False)
     booking_fee = models.CharField(max_length=100, null=False, blank=False)
@@ -29,7 +31,7 @@ class SiteSettings(models.Model):
         super(SiteSettings, self).save(*args, **kwargs)
     
     @classmethod
-    def get_company_settings(cls) -> 'SiteSettings | None':
+    def company_settings(cls) -> 'SiteSettings | None':
         """Retrive company information
 
         Returns:

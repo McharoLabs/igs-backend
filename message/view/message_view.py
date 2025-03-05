@@ -10,7 +10,7 @@ from message.models import MessageQueue
 logger = logging.getLogger(__name__)
 
 class MessageUtility:
-    _client = MessageHttpClient()
+    __client = MessageHttpClient()
 
     def __init__(self,reference: str, customer_name: str, payment: Payment, agent: Agent = None):
         self._reference = reference
@@ -21,7 +21,7 @@ class MessageUtility:
     def send_sms(self) -> None:
         if self._payment.payment_type == PaymentType.ACCOUNT.value:
             agent_message = f"You have successful subscribed {self._payment.plan.name} plan\nReference: {self._reference}\nAmount: {self._payment.amount}\nLogin to upload property at {settings.WEB_URL}"
-            self._single_destination(message=agent_message, phone_number=f"255{self._payment.phone_number[1:]}")
+            self.__single_destination(message=agent_message, phone_number=f"255{self._payment.phone_number[1:]}")
         else:
             agent_message = f"Dear {self._agent.first_name} {self._agent.last_name} you have new booking from {self._customer_name}.\nContact: {self._payment.phone_number}\nMore details: visit {settings.WEB_URL} under Dashboard search for {self._customer_name} and click More details"
             tenant_message = f"Dear {self._customer_name} you have successful booked the property.\nAgent: {self._agent.first_name} {self._agent.middle_name} {self._agent.last_name}.\nContact: {self._agent.phone_number}"
@@ -33,12 +33,12 @@ class MessageUtility:
             #     "reference": self._reference
             # }
             # self._multiple_destination(data=data)
-            self._single_destination(message=tenant_message, phone_number=f"255{self._payment.phone_number[1:]}")
-            self._single_destination(message=agent_message, phone_number=f"255{self._agent.phone_number[1:]}")
+            self.__single_destination(message=tenant_message, phone_number=f"255{self._payment.phone_number[1:]}")
+            self.__single_destination(message=agent_message, phone_number=f"255{self._agent.phone_number[1:]}")
 
-    def _single_destination(self, message: str, phone_number: str):
+    def __single_destination(self, message: str, phone_number: str):
         try:
-            response = self._client.send_to_single_destination(phone_number=phone_number, message=message, reference=self._reference)
+            response = self.__client.send_to_single_destination(phone_number=phone_number, message=message, reference=self._reference)
             
             if response is None:
                 logger.error("Failed to send SMS: No response received.")
@@ -79,9 +79,9 @@ class MessageUtility:
 
         return None
     
-    def _multiple_destination(self, data: Any):
+    def __multiple_destination(self, data: Any):
         try:
-            response = self._client.send_to_multi_destination(data=data)
+            response = self.__client.send_to_multi_destination(data=data)
 
             if response is None:
                 logger.error("Failed to send SMS: No response received.")

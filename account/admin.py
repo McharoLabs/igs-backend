@@ -4,7 +4,7 @@ from .models import Account
 
 class AccountAdmin(admin.ModelAdmin):
     list_display = ('get_agent_full_name', 'plan_name', 'start_date', 'end_date', 'is_active', 'view_details')
-    search_fields = ('agent__first_name', 'agent__last_name', 'plan__name', 'is_active')
+    search_fields = ('agent__first_name', 'agent__last_name', 'plan__name')
     list_filter = ('is_active', 'plan')
     ordering = ('-start_date',)
 

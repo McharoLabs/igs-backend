@@ -11,7 +11,6 @@ from igs_backend import settings
 logger = logging.getLogger(__name__)
 
 class PaymentHttpClient:
-    _order_status_endpoint = "order-status"
 
     def __init__(
         self,
@@ -24,6 +23,7 @@ class PaymentHttpClient:
         self.timeout: int = timeout
         self.max_retries: int = max_retries
         self.retry_wait_multiplier: int = retry_wait_multiplier
+        self.__order_status_endpoint = "order-status"
 
     @retry(
         stop=stop_after_attempt(3),
@@ -63,7 +63,7 @@ class PaymentHttpClient:
 
         try:
             response: Response = requests.post(
-                url=f"{self.base_url}/{self._order_status_endpoint}",
+                url=f"{self.base_url}/{self.__order_status_endpoint}",
                 data=status_data,
                 timeout=self.timeout
             )
@@ -76,11 +76,15 @@ class PaymentHttpClient:
         
         
 class MessageHttpClient:
-    _base_url = settings.MESSAGE_BASE_URL
-    _single_sms_url = settings.MESSAGE_SINGLE_URL
-    _multi_sms_url = settings.MESSAGE_MULTI
-    _derivery_report = f"{_base_url}/{settings.DERIVERY_REPORT_URL}=" 
-    _from = settings.MESSAGE_FROM
+    
+    def __init__(self):
+        self.__base_url = settings.MESSAGE_BASE_URL
+        self.__single_sms_url = settings.MESSAGE_SINGLE_URL
+        self.__multi_sms_url = settings.MESSAGE_MULTI
+        self.__delivery_report = f"{self.__base_url}/{settings.DELIVERY_REPORT_URL}="
+        self.__from = settings.MESSAGE_FROM
+        self.__message_balance_url = f"{self.__base_url}/{settings.MESSAGE_BALANCE}"
+
         
     def _generate_message_basic_auth_header(self) -> str:
         """Generate basic authorization header for the message by encoding to Base64 username and password of format (username:password)
@@ -110,7 +114,7 @@ class MessageHttpClient:
         }
         
         data = {
-            "from": self._from,
+            "from": self.__from,
             "to": phone_number,
             "text": message,
             "reference": reference
@@ -118,7 +122,7 @@ class MessageHttpClient:
 
         try:
             response: Response = requests.post(
-                url=f"{self._base_url}/{self._single_sms_url}",
+                url=f"{self.__base_url}/{self.__single_sms_url}",
                 json=data, 
                 headers=headers,
                 timeout=10  
@@ -144,7 +148,7 @@ class MessageHttpClient:
 
         try:
             response: Response = requests.post(
-                url=f"{self._base_url}/{self._multi_sms_url}",
+                url=f"{self.__base_url}/{self.__multi_sms_url}",
                 json=data, 
                 headers=headers,
                 timeout=10  
@@ -169,7 +173,7 @@ class MessageHttpClient:
             "Accept": "application/json"
         }
 
-        url = f"{self._base_url}{message_id}"
+        url = f"{self.__delivery_report}{message_id}"
         
         try:
             response: Response = requests.get(url, headers=headers, timeout=10)
@@ -179,3 +183,25 @@ class MessageHttpClient:
         except requests.exceptions.RequestException as e:
             logger.error(f"Error fetching delivery report: {e}", exc_info=True)
             return None
+        
+    
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, max=10),
+        retry=lambda retry_state: isinstance(retry_state.outcome.exception(), Timeout)
+    )
+    def message_balance(self) -> Response:
+        headers = {
+            "Authorization": self._generate_message_basic_auth_header(),
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+        
+        try:
+            
+            response: Response = requests.get(url=self.__message_balance_url, headers=headers, timeout=10)
+            response.raise_for_status()
+            return response
+        except requests.exceptions.RequestException as e:
+          logger.error(f"An error occured during request sms balance: {e}", exc_info=True)
+          return None

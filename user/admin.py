@@ -5,7 +5,7 @@ from igs_backend import settings
 from .models import Agent
 
 class AgentAdmin(admin.ModelAdmin):
-    list_display = ("profile_picture", "full_name", "phone_number", "email", "is_active", "view_details")
+    list_display = ("full_name", "phone_number", "email", "is_active", "view_details")
     search_fields = ("first_name", "last_name", "phone_number", "email")
     list_filter = ("is_active", "gender")
     ordering = ("-is_active", "first_name")
@@ -24,20 +24,6 @@ class AgentAdmin(admin.ModelAdmin):
         return f"{obj.first_name} {obj.last_name}"
     
     full_name.short_description = "Full Name"
-
-    
-    def profile_picture(self, obj):
-        """Display agent's avatar securely via Django's protected view."""
-        if obj.avatar:
-            media_url = f"/media/{obj.avatar}" 
-            return format_html(
-                '<img src="{}" width="50" height="50" style="border-radius: 50%;" />',
-                media_url
-            )
-        return format_html('<span style="color: red;">No Avatar</span>')
-
-    
-    profile_picture.short_description = "Profile Picture"
 
     def view_details(self, obj):
         """Add a clickable button to view agent details."""

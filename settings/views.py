@@ -53,7 +53,7 @@ class CompanyInformation(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def get_information(self, request):
         try:
-            siteSettings: SiteSettings | None = SiteSettings.get_company_settings()
+            siteSettings: SiteSettings | None = SiteSettings.company_settings()
 
             if siteSettings is None:
                 return Response(data={"detail": "No company information"}, status=status.HTTP_404_NOT_FOUND)
