@@ -415,9 +415,9 @@ class BookingViewSet(viewsets.ModelViewSet):
                 send_sms(message=message, phone_number=validated_data.get("phone_number"))
                 return Response(data={"detail": "Utapokea ujumbe hivi pumbe wenye mawasiliano ya mmiliki"}, status=status.HTTP_200_OK)
             except Exception as sms_error:
-                logger.error(f"Failed to send SMS to {validated_data.get("phone_number")}: {sms_error}", exc_info=True)
+                logger.error(f"Failed to send SMS to {validated_data.get('phone_number')}: {sms_error}", exc_info=True)
                 return Response(data={"detail": sms_error}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            logger.error(f"Failed to send SMS to {validated_data.get("phone_number")}: {sms_error}", exc_info=True)
+            logger.error(f"Failed to send SMS to {validated_data.get('phone_number')}: {sms_error}", exc_info=True)
             return Response(data={"detail": e}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
