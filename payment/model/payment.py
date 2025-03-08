@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from account.models import Account
 from booking.models import Booking
 from payment.enums.payment_status import PaymentStatus
-from payment.enums.payment_type import PaymentType
+from payment.enums.payment_type import PAYMENT_TYPE
 from property.models import Property
 from subscription_plan.models import SubscriptionPlan
 from user.models import Agent
@@ -28,7 +28,7 @@ class Payment(models.Model):
     
     phone_number = models.CharField(max_length=15, validators=[validate_phone_number], null=False)
     status = models.CharField(max_length=50, choices=PaymentStatus.choices(), default=PaymentStatus.default())
-    payment_type = models.CharField(max_length=100, choices=PaymentType.choices(), default=PaymentType.default())
+    payment_type = models.CharField(max_length=100, choices=PAYMENT_TYPE.choices(), default=PAYMENT_TYPE.default())
     order_id = models.CharField(max_length=255, null=True)
     message = models.CharField(max_length=255, null=True)
     payment_status = models.CharField(null=True, max_length=100)
@@ -138,7 +138,7 @@ class Payment(models.Model):
         Args:
             phone_number (str): Tenant or agent phone number. This is required 
                                 for identifying the user associated with the payment.
-            payment_type (PaymentType): The type of payment being made (e.g., 
+            payment_type (PAYMENT_TYPE): The type of payment being made (e.g., 
                                         booking, account, etc.).
             amount (Decimal): The amount paid. This should be a valid decimal 
                             value representing the payment sum.
@@ -159,11 +159,11 @@ class Payment(models.Model):
         Returns:
             Payment: The created Payment instance that has been validated and saved.
         """
-        if payment_type == PaymentType.BOOKING.value:
+        if payment_type == PAYMENT_TYPE.BOOKING.value:
             if agent or plan:
                 raise ValidationError("For Booking type, agent and plan should not be provided.")
         
-        elif payment_type == PaymentType.ACCOUNT.value:
+        elif payment_type == PAYMENT_TYPE.ACCOUNT.value:
             if property:
                 raise ValidationError("For Account type, property should not be provided.")
         

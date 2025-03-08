@@ -1,8 +1,9 @@
 from enum import Enum
 
-class PaymentType(Enum):
+class PAYMENT_TYPE(Enum):
     BOOKING = 'Booking'
     ACCOUNT = 'Account'
+    NONE = 'None'
 
     @classmethod
     def choices(cls):

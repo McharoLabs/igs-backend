@@ -3,8 +3,8 @@ from requests import Response
 from rest_framework import permissions
 from rest_framework.decorators import action
 from igs_backend import settings
-from message.view.message_view import MessageUtility
-from payment.enums.payment_type import PaymentType
+from message.utils import SmsService
+from payment.enums.payment_type import PAYMENT_TYPE
 from payment.models import Payment
 from rest_framework.views import APIView
 from django.views.decorators.csrf import csrf_exempt
@@ -69,9 +69,21 @@ class PaymentWebHook(APIView):
                             customer_name=wh_customer_name
                         )
                         
+                        sms_service = SmsService(reference=wh_reference)
                         
-                        messageUtilities = MessageUtility(reference=wh_reference, customer_name=wh_customer_name, payment=payment, agent=payment.property.agent)
-                        messageUtilities.send_sms()
+                        if payment.payment_type == PAYMENT_TYPE.BOOKING.value:
+                            sms_service.send_booking_message(
+                                customer_name=wh_customer_name,
+                                agent=payment.property.agent,
+                                customer_phone=payment.phone_number
+                            )
+
+                        elif payment.payment_type == PAYMENT_TYPE.ACCOUNT.value:
+                            sms_service.send_subscription_sms(
+                                name = payment.property.agent.full_name,
+                                reference = wh_reference,
+                                subscription_plan = payment.plan
+                            )
 
                         logger.info(f"Payment made successful for {payment}")
                         return HttpResponse("Success", 200)

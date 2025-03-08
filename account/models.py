@@ -105,8 +105,7 @@ class Account(models.Model):
             current_active_account = cls.objects.filter(agent=agent, is_active=True).first()
 
             if current_active_account:
-                current_active_account.is_active = False
-                current_active_account.save()
+                return None
 
             account = cls(
                 agent=agent,

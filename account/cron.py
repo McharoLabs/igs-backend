@@ -1,79 +1,48 @@
 import logging
-import uuid
+import time
 
 from account.models import Account
-from igs_backend import settings
-from message.view.message_view import MessageUtility
-from subscription_plan.models import SubscriptionPlan
-from utils.http_client import MessageHttpClient
+from message.utils import send_sms, subscribe
 
 logger = logging.getLogger(__name__)
-
-def generate_short_reference():
-    return str(uuid.uuid4())[:8]
 
 def expire_account_job():
     try:
         accounts = Account.get_active_accounts()
-        client = MessageHttpClient()
 
         if accounts:
             for account in accounts:
                 expired = account.expire_account()
-                
+
                 if expired:
-                    reference = generate_short_reference()
+                    message = f"""
+                    Salamu kwako ndugu {account.agent.full_name},\n\n
+                    Plani yako {account.plan.name} imekwisha muda wake\n
+                    Utapewa akaunti ya bure hivi punde\n
+                    """
+                    try:
+                        send_sms(message=message, phone_number=account.agent.phone_number)
+                    except Exception as sms_error:
+                        logger.error(f"Failed to send SMS to {account.agent.phone_number}: {sms_error}")
 
-                    message = (
-                        f"Mpendwa {account.agent.full_name} ,\n"
-                        "Akaunti yako imekwisha muda wake na haitatumika tena.\n"
-                        "Tafadhali rejesha akaunti yako ili huduma ziendelee.\n"
-                        "Mali zako hazitaonekana kwa wateja hadi akaunti iwe imerejeshwa.\n"
-                        f"Ingia kwenye {settings.WEB_URL}, nenda Mipangilio > Akaunti,\n"
-                        "chagua mpango unaotaka na fanya malipo ili kuendelea kutumia huduma."
-                    )
+                    time.sleep(10)
                     
-
-
-                    response = client.send_to_single_destination(
-                        phone_number=f"255{account.agent.phone_number[1:]}",
-                        message=message,
-                        reference=reference
-                    )
-
+                    try:
+                        subscribe(agent=account.agent)
+                    except Exception as subscribe_error:
+                        logger.error(f"Failed to subscribe agent {account.agent.full_name}: {subscribe_error}")
 
     except Exception as e:
         logger.error(f"Error expiring accounts: {e}", exc_info=True)
 
 
+
 def subscribe_free_account_job():
     try:
-        client = MessageHttpClient()
-        
-        free_plan = SubscriptionPlan.get_free_plan()
-        
-        if free_plan is None:
-            return None
-        
         agents = Account.get_agents_without_account()
         
         for agent in agents:
-            Account.subscribe_free_account(plan=free_plan, agent=agent)
-            
-            reference = generate_short_reference()
-
-            response = client.send_to_single_destination(
-                phone_number=f"255{agent.phone_number[1:]}",
-                message=(
-                    f"Mpendwa {agent.full_name},\n"
-                    "Umepewa usajili wa akaunti ya bure.\n"
-                    "Akaunti hii ina baadhi ya vikwazo:\n"
-                    "\t1: Inapewa kipaumbele cha mwisho kwenye ukurasa wa mbele wa mteja na kwenye utafutaji.\n"
-                    f"Ikiwa unahitaji kuwa na kipaumbele cha kwanza, tafadhali ingia kwenye {settings.WEB_URL},\n"
-                    "nenda Mipangilio > Akaunti, chagua mpango na fanya malipo."
-                ),
-                reference=reference
-            )
+            subscribe(agent=agent)
         
     except Exception as e:
         logger.error(f"Subscription of free account error: {e}", exc_info=True)

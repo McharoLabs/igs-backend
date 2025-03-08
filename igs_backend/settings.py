@@ -50,10 +50,11 @@ DELIVERY_REPORT_URL = env('DELIVERY_REPORT_URL')
 WEB_URL = env('WEB_URL')
 MESSAGE_MULTI = env('MESSAGE_MULTI')
 MESSAGE_BALANCE = env('MESSAGE_BALANCE')
+COUNTRY_CODE = env('COUNTRY_CODE')
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = [
     'portal.kedeshlimited.com',
@@ -117,7 +118,7 @@ CRONJOBS = [
     ('* * * * *', 'property.cron.deactivate_property_job'),
     ('0 */10 * * *', 'payment.cron.delete_pending_payments_job'),
     ('* * * * *', 'account.cron.subscribe_free_account_job'),
-    ('* * * * *', 'message.cron.check_message_balance_job'),
+    ('0 12 * * *', 'message.cron.check_message_balance_job'),
 ]
 
 log_directory = BASE_DIR / 'logs'
@@ -275,11 +276,11 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'https://assets.portal.kedeshlimited.com/static/' 
-STATIC_ROOT = os.path.join(BASE_DIR, '../../assets.portal.kedeshlimited.com/static')
+STATIC_URL = env('STATIC_URL') 
+STATIC_ROOT = os.path.join(BASE_DIR, env('STATIC_ROOT'))
 
-MEDIA_URL = 'https://assets.portal.kedeshlimited.com/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, '../../assets.portal.kedeshlimited.com/media/')
+MEDIA_URL = env('MEDIA_URL')
+MEDIA_ROOT = os.path.join(BASE_DIR, env('MEDIA_ROOT'))
 
 # STATIC_URL = env('STATIC_URL')
 # STATIC_ROOT = env('STATIC_ROOT')

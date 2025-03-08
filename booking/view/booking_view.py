@@ -13,7 +13,8 @@ from booking.models import Booking
 from booking.serializers import ResponseBookingSerailizer
 from booking.serializers import  RequestBookingSerializer
 from igs_backend import settings
-from payment.enums.payment_type import PaymentType
+from message.utils import send_sms
+from payment.enums.payment_type import PAYMENT_TYPE
 from payment.models import Payment
 from property.models import Property
 from settings.models import SiteSettings
@@ -54,7 +55,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         operation_description="Retrieve agent booked property for the authorized agent",
         operation_summary="Retrieve booked property for an agent",
         method="get",
-        tags=["booking"],
+        tags=["Booking"],
         responses={
             200: openapi.Response(
                 description="Agent's booked properties",
@@ -151,7 +152,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         operation_description="Retrieve agent booked properties, authorized agent",
         operation_summary="Retrieve authorized agent booked properties",
         method="get",
-        tags=["booking"],
+        tags=["Booking"],
         responses={
             200: openapi.Response(
                 description="A list of agent's booked properties",
@@ -251,12 +252,12 @@ class BookingViewSet(viewsets.ModelViewSet):
             logger.error(f"An error occured during fetching agent booked properties: {e}", exc_info=True)
             return Response(data={"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    
+
     @swagger_auto_schema(
         operation_description="Make booking by providong necessary information such as property ID and tenant phoe number",
         operation_summary="Tenant booking",
         method="post",
-        tags=["booking"],
+        tags=["Booking"],
         request_body=RequestBookingSerializer,
         responses={
             200: openapi.Response(
@@ -289,7 +290,7 @@ class BookingViewSet(viewsets.ModelViewSet):
 
         property = Property.get_property_for_booking(property_id=validated_data.get("property_id"))
         siteSettings: SiteSettings | None = SiteSettings.company_settings()
-        
+
         if not property:
             return Response(data={"detail": "Property not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -299,11 +300,11 @@ class BookingViewSet(viewsets.ModelViewSet):
         try:
             payment = Payment.create(
                 phone_number=validated_data.get("phone_number"),
-                payment_type=PaymentType.BOOKING.value,
+                payment_type=PAYMENT_TYPE.BOOKING.value,
                 amount=siteSettings.booking_fee if siteSettings else settings.BOOKING_FEE,
                 property=property,
             )
-            
+
             order_data = {
                     'buyer_email': validated_data.get('customer_email'),
                     'buyer_name': validated_data.get('customer_name'),
@@ -356,3 +357,67 @@ class BookingViewSet(viewsets.ModelViewSet):
             logger.error(f"Unexpected error occurred: {e}", exc_info=True)
             payment.delete()
             return Response({"detail": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @swagger_auto_schema(
+        operation_description="Request agent info for the tenant providong necessary information such as property ID and tenant phoe number",
+        operation_summary="Tenant agent info",
+        method="post",
+        tags=["Booking"],
+        request_body=RequestBookingSerializer,
+        responses={
+            200: openapi.Response(
+                description="Success",
+                schema=DetailResponseSerializer(many=False),
+            ),
+            403: openapi.Response(
+                description="Bad request, Property not available for booking",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            404: openapi.Response(
+                description="Not found",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            400: openapi.Response(
+                description="Bad request",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            500: openapi.Response(
+                description="Internal server error",
+                schema=DetailResponseSerializer(many=False)
+            ),
+        },
+    )
+    @action(detail=False, methods=['post'])
+    def request_agent_info(self, request):
+        request_serializer = RequestBookingSerializer(data=request.data)
+        request_serializer.is_valid(raise_exception=True)
+        validated_data = request_serializer.validated_data
+
+        property = Property.get_property_for_booking(property_id=validated_data.get("property_id"))
+        siteSettings: SiteSettings | None = SiteSettings.company_settings()
+
+        if not property:
+            return Response(data={"detail": "Property not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if not property.available():
+            return Response(data={"detail": "Property not available for booking"}, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            message = f"""
+            Salamu kwako ndugu {validated_data.get("customer_name")}\n\n
+            Namba ya simu ya mali wa mali ni {property.agent.phone_number}\n\n
+            Kuboresha huduma yetu kwa kujulikana, tafadhali wataarifu ndugu jamaa na marafiki kutembelea {settings.WEB_URL} kuona mali mbali mbali\n\n
+            Kampuni: Kedesh Limited\n
+            Nambari: {siteSettings.support_phone}\n
+            Barua pepe: {siteSettings.support_email}
+            """
+            try:
+                send_sms(message=message, phone_number=validated_data.get("phone_number"))
+                return Response(data={"detail": "Utapokea ujumbe hivi pumbe wenye mawasiliano ya mmiliki"}, status=status.HTTP_200_OK)
+            except Exception as sms_error:
+                logger.error(f"Failed to send SMS to {validated_data.get("phone_number")}: {sms_error}", exc_info=True)
+                return Response(data={"detail": sms_error}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Failed to send SMS to {validated_data.get("phone_number")}: {sms_error}", exc_info=True)
+            return Response(data={"detail": e}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            

@@ -14,7 +14,7 @@ from drf_yasg import openapi
 import logging
 
 from igs_backend import settings
-from payment.enums.payment_type import PaymentType
+from payment.enums.payment_type import PAYMENT_TYPE
 from payment.models import Payment
 from shared.serializer.detail_response_serializer import DetailResponseSerializer
 from subscription_plan.models import SubscriptionPlan
@@ -122,7 +122,7 @@ class SubscriptionPlanViewSet(viewsets.ModelViewSet):
 
                 payment = Payment.create(
                     phone_number=validated_data.get("phone_number"),
-                    payment_type=PaymentType.ACCOUNT.value,
+                    payment_type=PAYMENT_TYPE.ACCOUNT.value,
                     amount=plan.price,
                     agent=agent,
                     plan=plan
@@ -148,7 +148,7 @@ class SubscriptionPlanViewSet(viewsets.ModelViewSet):
                 if response is None:
                     return Response({"detail": "Payment gateway error, please try again later"}, status=status.HTTP_502_BAD_GATEWAY)
 
-                logger.info(f"Plan subscription for {payment.agent} with payload: {json.dumps(order_data)} and response: {response.text}")
+                # logger.info(f"Plan subscription for {payment.agent} with payload: {json.dumps(order_data)} and response: {response.text}")
 
                 if response.status_code == 200:
                     response_data = response.json()
@@ -159,7 +159,7 @@ class SubscriptionPlanViewSet(viewsets.ModelViewSet):
                         return Response(data={"detail": response_data.get("message")}, status=status.HTTP_400_BAD_REQUEST)
 
                     payment.update_order_and_message(order_id=response_data.get("order_id"), message=response_data.get("message"))
-                    return Response(data={"detail": f"Successfully subscribed to {plan.name}, please complete your payment to activate your account."}, status=status.HTTP_200_OK)
+                    return Response(data={"detail": f"Tafadhali kamilisha malipo kwa kuingiza nywila yako kwenye popup iliyokuja kujiunga na plani {plan.name}"}, status=status.HTTP_200_OK)
 
                 payment.delete()
                 return Response(data={"detail": "Unexpected error with payment gateway"}, status=status.HTTP_502_BAD_GATEWAY)
