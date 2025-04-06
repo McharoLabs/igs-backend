@@ -32,9 +32,9 @@ class Agent(User):
     def save_agent(cls, first_name: str, middle_name: str, last_name: str, phone_number: str, gender: str, email: str, password: str, avatar=None) -> None:
 
         if cls.is_email_exist(email=email):
-            raise ValidationError(f"Email already exists.")
+            raise ValidationError(f"Barua pepe tayari imesajiliwa. Tafadhali tumia nyingine.")
         if cls.is_phone_number_exist(phone_number=phone_number):
-            raise ValidationError(f"Phone number already exists.")
+            raise ValidationError(f"Namba ya simu tayari imesajiliwa. Tafadhali tumia nyingine.")
         
         agent = cls(
             first_name=first_name,

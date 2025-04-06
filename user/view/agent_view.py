@@ -9,6 +9,8 @@ from user.models import Agent
 from user.serializers import RequestAgentRegistrationSerializer
 import logging
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError
+
 
 logger = logging.getLogger(__name__)
 
@@ -77,8 +79,19 @@ class AgentViewSet(viewsets.ViewSet):
             
             return Response(data={"detail": "Hongera, umefanikiwa kujisajili. Ndani ya dakika moja utapokea ujumbe wa meseji, tafadhali soma kwa umakini na baada ya hapo unaweza ingia kwenye mfumo na kutanganza nasi"}, status=status.HTTP_201_CREATED)
         except ValidationError as e:
-            logger.error(f"Error during agent registration: {e}", exc_info=True)
-            return Response(data={"detail": e.message}, status=status.HTTP_400_BAD_REQUEST)
+            logger.error(f"Validation during agent registration: {e}", exc_info=True)
+            return Response(
+                data={"detail": e.messages[0] if hasattr(e, "messages") else str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        except IntegrityError as e:
+            logger.error(f"Database IntegrityError during agent registration: {e}", exc_info=True)
+            return Response(
+                data={"detail": "Namba ya simu au barua pepe tayari imesajiliwa. Tafadhali tumia nyingine."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
         except Exception as e:
             logger.error(f"Error during agent registration: {str(e)}")
             return Response(data={"detail": {str(e)}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
