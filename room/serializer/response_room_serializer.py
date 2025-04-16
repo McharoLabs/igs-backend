@@ -2,7 +2,6 @@ from rest_framework import serializers
 from igs_backend import settings
 from location.serializers import ResponseLocationSerializer
 from room.models import Room
-from user.serializers import ResponseAgentSerializer
 
 
 class ResponseRoomSerializer(serializers.ModelSerializer):

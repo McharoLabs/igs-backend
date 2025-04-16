@@ -1,8 +1,6 @@
 import json
 from typing import cast
-from django.forms import ValidationError
 from django.http import HttpRequest
-from requests import HTTPError, Timeout
 import requests
 from rest_framework import viewsets, permissions, status
 from account.serializers import ResponseSubscriptionPlanSerailizer, RequestSubscriptionSerializer
