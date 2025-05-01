@@ -1,3 +1,6 @@
 from django.contrib import admin
+from .models import LandImage
 
-# Register your models here.
+@admin.register(LandImage)
+class LandImageAdmin(admin.ModelAdmin):
+    list_display = ('image_id', 'land', 'image')

@@ -3,6 +3,6 @@ from . import views
 
 router = DefaultRouter()
 
-router.register(r'images', views.LandViewSet, basename='image')
+router.register(r'land-images', views.LandImagesViewSet, basename='image')
 router.register(r'lands', views.LandViewSet, basename='land')
 urlpatterns = router.urls

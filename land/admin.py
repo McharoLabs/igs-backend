@@ -5,23 +5,23 @@ from .models import Land
 class LandAdmin(admin.ModelAdmin):
     list_display = (
         'land_id', 'agent', 'category', 'land_size', 'price', 'status',
-        'is_serviced', 'is_active_account', 'listing_date', 'view_details'
+        'is_active_account', 'listing_date', 'view_details'
     )
-    list_filter = ('category', 'status', 'is_serviced', 'is_active_account', 'zoning_type', 'access_road_type')
+    list_filter = ('category', 'status', 'is_active_account', 'zoning_type', 'access_road_type')
     search_fields = ('land_id', 'agent__user__first_name', 'agent__user__last_name', 'location__region', 'location__district', 'description')
     ordering = ('-listing_date',)
-    list_editable = ('is_serviced', 'is_active_account')
+    list_editable = ('is_active_account',)
     readonly_fields = ('listing_date',)
     list_per_page = 25
     fieldsets = (
         ('Basic Information', {
-            'fields': ('agent', 'category', 'land_size', 'price', 'rental_duration', 'status')
+            'fields': ('agent', 'category', 'land_size', 'price', 'status')
         }),
         ('Location Details', {
             'fields': ('location', 'access_road_type', 'zoning_type')
         }),
         ('Features', {
-            'fields': ('utilities', 'is_serviced', 'description', 'is_active_account', 'is_deleted')
+            'fields': ('utilities', 'description', 'is_active_account', 'is_deleted')
         }),
         ('Metadata', {
             'fields': ('listing_date',)

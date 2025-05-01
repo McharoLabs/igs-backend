@@ -36,39 +36,34 @@ class SmsService:
         )
         
     def __send_booking_tenant_message(self, name: str, phone_number: str, agent_phone: str, agent_name: str) -> None:
-        message = f"""
-        Salamu kwako ndugu {name}\n\n
-        Namba ya simu ya mali wa mali ni {agent_phone}\n\n
-        Kuboresha huduma yetu kwa kujulikana, tafadhali wataarifu ndugu jamaa na marafiki kutembelea {settings.WEB_URL} kuona mali mbali mbali
+        message = f"""\
+        Habari {name},\
+        \nWakala: {agent_phone}\
+        \nMali zaidi: {settings.WEB_URL}\
+        \nKedesh Ltd {self.__company_info.support_phone}\
         """
         
         self.__send_message(message=message, phone_number=phone_number)
         
     def __send_booking_agent_message(self, customer_name: str, customer_phone: str, agent: Agent) -> None:
-        message = f"""
-        Salamu kwako ndugu {agent.full_name}\n\n
-        Mteja umepata mteja aliyependezwa na mali yako mwenye taarifa\n
-        Jina: {customer_name}\n
-        Number ya simu: {customer_phone}\n\n
-        Kama hajakutafuta, tafadhali mtafute kuogeza uaminifu\n
-        Kurudisha mali yako hewani tembelea {settings.WEB_URL} -> Dashibodi -> Tafuta mali kwa jina {customer_name} -> Tazama zaid
+        message = f"""\
+        Habari {agent.full_name},\
+        \nMteja: {customer_name}, Simu: {customer_phone}\
+        \nMtafute ikiwa hajakupigia.\
+        \nAngalia mali: {settings.WEB_URL}\
         """
         
         self.__send_message(message=message, phone_number=agent.phone_number)
         
     def send_subscription_sms(self, name: str, reference: str, phone_number: str, subscription_plan: SubscriptionPlan) -> None:
-        message = f"""
-        Salamu kwako ndugo {name}\n\n
-        Umefanikisha kujiunga na plani {subscription_plan.name}\n\n
-        Jina la plani: {subscription_plan.name}\n
-        muda wa plani: {subscription_plan.duration_days}\n
-        Idadi ya mali: {subscription_plan.max_houses}\n
-        Kiasi: {subscription_plan.price}\n
-        Numbari ya rejea: {reference}\n\n
-        Kwa msaada piga simu: {self.__company_info.support_phone}\n
-        Barua pepe: {self.__company_info.support_email}\n\n
-        Tembelea {settings.WEB_URL} kutangana nasi.\n\n
+        message = f"""\
+        Habari { name },\
+        \nUmejiunga na plani: {subscription_plan.name}\
+        \nMuda: {subscription_plan.duration_days} siku, Mali: {subscription_plan.max_houses}\
+        \nBei: {subscription_plan.price}, Rejea: {reference}\
+        \nKedesh Ltd {self.__company_info.support_phone}\
         """
+
         self.__send_message(message=message, phone_number=phone_number)
         
     def __send_message(self, message: str, phone_number: str) -> None:
@@ -141,14 +136,12 @@ def subscribe(agent: Agent, subscription_plan: SubscriptionPlan = None) -> None:
 
         Account.subscribe_free_account(plan=subscription_plan, agent=agent)
 
-        message = f"""
-        Samalu kwako ndugo {agent.full_name}\n\n
-        Umepewa akaunti ya bure kutoka Kedesh\n
-        Akaunti hii haitoi vipaumbele kwenye mali zako, hivyo zitakua zamwisho kuonekana kwa wateja\n\n
-        Kulipia plani mpya tembelea {settings.WEB_URL} -> Mipangilio -> Profile, Chagua plani ili mali zako zipewe kipaumbele.\n\n
-
-        Kampuni: Kedesh Limited\n
-        Website: {settings.WEB_URL}
+        message = f"""\
+        Habari {agent.full_name},\
+        \nUmepewa akaunti ya bure.\
+        \nHaitangazi mali kwa kasi.\
+        \nLipia plani: {settings.WEB_URL} > Profile\
+        \nKedesh Ltd\
         """
 
         try:

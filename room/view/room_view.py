@@ -37,7 +37,7 @@ class RoomViewSet(viewsets.ModelViewSet):
         """
         Custom method to define permissions for each action.
         """
-        if self.action == 'add_room' or self.action == 'room_list' or self.action == 'soft_delete_room':
+        if self.action == 'add_room' or self.action == 'room_list' or self.action == 'soft_delete_room' or self.action == 'retrieve_room':
             permission_classes = [permissions.IsAuthenticated, IsAgent]
         else:
             permission_classes = [permissions.AllowAny]

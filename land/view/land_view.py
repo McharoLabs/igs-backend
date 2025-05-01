@@ -21,10 +21,12 @@ from rest_framework.pagination import PageNumberPagination
 from igs_backend import settings
 from land.enums.land_type import LAND_TYPE
 from land.model.land import Land
-from land.serializers import FilterLandSerializer, AddLandSerializer
+from land.serializers import FilterLandSerializer, AddLandSerializer, ResponseAgentLandSerializer, RequestLandAgentInfoSerializer
 from location.models import Location
 from location.models import District
+from message.utils import send_sms
 from property_images.models import LandImage
+from settings.models import SiteSettings
 from shared.serializer.detail_response_serializer import DetailResponseSerializer
 from user.model.agent import Agent
 from user.models import User
@@ -32,24 +34,23 @@ from user.models import User
 
 logger = logging.getLogger(__name__)
 
-@method_decorator(never_cache, name='dispatch')
-class LandViewSet(viewsets.ModelViewSet):
+
+class LandImagesViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for handling Land images.
+    """
+    
     def get_serializer_class(self):
         return AddLandSerializer
     
     def get_permissions(self):
-        """
-        Custom method to define permissions for each action.
-        """
-        if self.action == 'add_land' or self.action == 'land_list' or self.action == 'soft_delete_land':
-            permission_classes = [permissions.IsAuthenticated, IsAgent]
-        else:
-            permission_classes = [permissions.AllowAny]
+        
+        permission_classes = [permissions.AllowAny]
         
         return [permission() for permission in permission_classes]
     
     def get_queryset(self):
-        return Land.objects.none()
+        return LandImage.objects.none()
     
     @swagger_auto_schema(
         operation_description="View Land image",
@@ -93,7 +94,320 @@ class LandViewSet(viewsets.ModelViewSet):
             return Response({"detail": "Image not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"detail": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@method_decorator(never_cache, name='dispatch')
+class LandViewSet(viewsets.ModelViewSet):
+    def get_serializer_class(self):
+        return AddLandSerializer
     
+    def get_permissions(self):
+        """
+        Custom method to define permissions for each action.
+        """
+        if self.action == 'add_land' or self.action == 'land_list' or self.action == 'soft_delete_land' or self.action == 'retrieve_land':
+            permission_classes = [permissions.IsAuthenticated, IsAgent]
+        else:
+            permission_classes = [permissions.AllowAny]
+        
+        return [permission() for permission in permission_classes]
+    
+    def get_queryset(self):
+        return Land.objects.none()
+    
+    @swagger_auto_schema(
+        operation_description="Make booking by providong necessary information such as property ID and tenant phoe number",
+        operation_summary="Tenant booking",
+        method="post",
+        tags=["Land"],
+        request_body=RequestLandAgentInfoSerializer,
+        responses={
+            200: openapi.Response(
+                description="Success",
+                schema=DetailResponseSerializer(many=False),
+            ),
+            403: openapi.Response(
+                description="Bad request, Property not available for booking",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            404: openapi.Response(
+                description="Not found",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            400: openapi.Response(
+                description="Bad request",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            500: openapi.Response(
+                description="Internal server error",
+                schema=DetailResponseSerializer(many=False)
+            ),
+        },
+    )
+    @action(detail=False, methods=['post'])
+    def request_agent_info(self, request: HttpRequest):
+        request_serializer = RequestLandAgentInfoSerializer(data=request.data)
+        request_serializer.is_valid(raise_exception=True)
+        validated_data = request_serializer.validated_data
+
+
+        try:
+            
+            
+            land = Land.get_land_available_for_booking(land_id=validated_data.get("land_id"))
+            siteSettings: SiteSettings | None = SiteSettings.company_settings()
+
+            if not land:
+                return Response(data={"detail": "Land not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+            message = f"""\
+            Habari {validated_data.get("customer_name")},\
+            \nMawasiliano ya wakala: {land.agent.phone_number}\
+            \nTazama mali zaidi: {settings.WEB_URL}\
+            \nKampuni: Kedesh Ltd | Simu: {siteSettings.support_phone}\
+            """
+            
+            try:
+                send_sms(message=message, phone_number=validated_data.get("phone_number"))
+                return Response(data={"detail": "Utapokea ujumbe hivi pumbe wenye mawasiliano ya mmiliki"}, status=status.HTTP_200_OK)
+            except Exception as sms_error:
+                logger.error(f"Failed to send SMS to {validated_data.get('phone_number')}: {sms_error}", exc_info=True)
+                return Response(data={"detail": sms_error}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Failed to send SMS to {validated_data.get('phone_number')}: {sms_error}", exc_info=True)
+            return Response(data={"detail": e}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @swagger_auto_schema(
+        operation_description="Retrieve Land Details For Tenant",
+        operation_summary="Tenant Land Details",
+        method="get",
+        tags=["Land"],
+        responses={
+            200: openapi.Response(
+                description="An object containing agent land details",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'land_id': openapi.Schema(type=openapi.TYPE_STRING),
+                        'category': openapi.Schema(type=openapi.TYPE_STRING),
+                        'land_size': openapi.Schema(type=openapi.TYPE_STRING),
+                        'price': openapi.Schema(type=openapi.TYPE_STRING),
+                        'access_road_type': openapi.Schema(type=openapi.TYPE_STRING),
+                        'zoning_type': openapi.Schema(type=openapi.TYPE_STRING),
+                        'utilities': openapi.Schema(type=openapi.TYPE_STRING),
+                        'description': openapi.Schema(type=openapi.TYPE_STRING),
+                        'is_active_account': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        'status': openapi.Schema(type=openapi.TYPE_STRING),
+                        'is_deleted': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        'land_size_unit': openapi.Schema(type=openapi.TYPE_STRING),
+                        'listing_date': openapi.Schema(type=openapi.TYPE_STRING),
+                        'location': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'location_id': openapi.Schema(type=openapi.TYPE_STRING),
+                                'region': openapi.Schema(type=openapi.TYPE_STRING),
+                                'district': openapi.Schema(type=openapi.TYPE_STRING),
+                                'ward': openapi.Schema(type=openapi.TYPE_STRING),
+                                'street': openapi.Schema(type=openapi.TYPE_STRING),
+                                'latitude': openapi.Schema(type=openapi.TYPE_STRING),
+                                'longitude': openapi.Schema(type=openapi.TYPE_STRING),
+                            }
+                        ),
+                        'images': openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(type=openapi.TYPE_STRING),
+                        ),
+                    }
+                )
+            ),
+            400: openapi.Response(
+                description="Bad request",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            500: openapi.Response(
+                description="Internal server error",
+                schema=DetailResponseSerializer(many=False)
+            ),
+        },
+    )
+    @action(detail=True, methods=['get'])
+    def retrieve_land_details(self, request: HttpRequest, pk: uuid.UUID):
+        """
+        Retrieve a specific land by its ID.
+        """
+        try:
+            land = Land.get_land_by_id(land_id=pk)
+            if land is None:
+                return Response(data={"detail": "Land not found"}, status=status.HTTP_404_NOT_FOUND)
+            serializer = ResponseAgentLandSerializer(land)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Unexpected error occurred: {e}", exc_info=True)
+            return Response({"detail": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @swagger_auto_schema(
+        operation_description="Retrieve details of agent land properties",
+        operation_summary="Agent Land Details",
+        method="get",
+        tags=["Land"],
+        responses={
+            200: openapi.Response(
+                description="An object containing agent land details",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'land_id': openapi.Schema(type=openapi.TYPE_STRING),
+                        'category': openapi.Schema(type=openapi.TYPE_STRING),
+                        'land_size': openapi.Schema(type=openapi.TYPE_STRING),
+                        'price': openapi.Schema(type=openapi.TYPE_STRING),
+                        'access_road_type': openapi.Schema(type=openapi.TYPE_STRING),
+                        'zoning_type': openapi.Schema(type=openapi.TYPE_STRING),
+                        'utilities': openapi.Schema(type=openapi.TYPE_STRING),
+                        'description': openapi.Schema(type=openapi.TYPE_STRING),
+                        'is_active_account': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        'status': openapi.Schema(type=openapi.TYPE_STRING),
+                        'is_deleted': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        'land_size_unit': openapi.Schema(type=openapi.TYPE_STRING),
+                        'listing_date': openapi.Schema(type=openapi.TYPE_STRING),
+                        'location': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'location_id': openapi.Schema(type=openapi.TYPE_STRING),
+                                'region': openapi.Schema(type=openapi.TYPE_STRING),
+                                'district': openapi.Schema(type=openapi.TYPE_STRING),
+                                'ward': openapi.Schema(type=openapi.TYPE_STRING),
+                                'street': openapi.Schema(type=openapi.TYPE_STRING),
+                                'latitude': openapi.Schema(type=openapi.TYPE_STRING),
+                                'longitude': openapi.Schema(type=openapi.TYPE_STRING),
+                            }
+                        ),
+                        'images': openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(type=openapi.TYPE_STRING),
+                        ),
+                    }
+                )
+            ),
+            400: openapi.Response(
+                description="Bad request",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            500: openapi.Response(
+                description="Internal server error",
+                schema=DetailResponseSerializer(many=False)
+            ),
+        },
+    )
+    @action(detail=True, methods=['get'])
+    def retrieve_land(self, request: HttpRequest, pk: uuid.UUID):
+        """
+        Retrieve a specific land by its ID.
+        """
+        try:
+            user = cast(User, request.user)
+            agent: Agent = None
+
+            if hasattr(user, 'agent'):
+                agent = cast(Agent, user)
+            else:
+                return Response(data={"detail": "You are not authorized to view this resource"}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            land = Land.get_agent_land(agent=agent, land_id=pk)
+            if land is None:
+                return Response(data={"detail": "Land not found"}, status=status.HTTP_404_NOT_FOUND)
+            serializer = ResponseAgentLandSerializer(land)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Unexpected error occurred: {e}", exc_info=True)
+            return Response({"detail": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @swagger_auto_schema(
+        operation_description="List of agent land properties",
+        operation_summary="Agent Land List",
+        method="get",
+        tags=["Land"],
+        responses={
+            200: openapi.Response(
+                description="A paginated list of lands",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'count': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'next': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
+                        'previous': openapi.Schema(type=openapi.TYPE_STRING, nullable=True),
+                        'results': openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(
+                                type=openapi.TYPE_OBJECT,
+                                properties={
+                                    'land_id': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'category': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'land_size': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'price': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'access_road_type': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'zoning_type': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'utilities': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'description': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'is_active_account': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                    'status': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'is_deleted': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                    'land_size_unit': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'listing_date': openapi.Schema(type=openapi.TYPE_STRING),
+                                    'location': openapi.Schema(
+                                        type=openapi.TYPE_OBJECT,
+                                        properties={
+                                            'location_id': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'region': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'district': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'ward': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'street': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'latitude': openapi.Schema(type=openapi.TYPE_STRING),
+                                            'longitude': openapi.Schema(type=openapi.TYPE_STRING),
+                                        }
+                                    ),
+                                    'images': openapi.Schema(
+                                        type=openapi.TYPE_ARRAY,
+                                        items=openapi.Schema(type=openapi.TYPE_STRING),
+                                    ),
+                                }
+                            )
+                        )
+                    }
+                ),
+            ),
+            400: openapi.Response(
+                description="Bad request",
+                schema=DetailResponseSerializer(many=False)
+            ),
+            500: openapi.Response(
+                description="Internal server error",
+                schema=DetailResponseSerializer(many=False)
+            ),
+        },
+    )
+    @action(detail=False, methods=['get'])
+    def land_list(self, request: HttpRequest):
+        user = cast(User, request.user)
+        
+        try:
+            agent = Agent.get_agent_by_phone_number(phone_number=user.phone_number)
+            if agent is None:
+                return Response(data={"detail": "Agent not found"}, status=status.HTTP_404_NOT_FOUND)
+            lands = Land.get_agent_lands(agent=agent)
+            paginator = PageNumberPagination()
+            page = paginator.paginate_queryset(lands, request)
+            if page is not None:
+                serializer = FilterLandSerializer(page, many=True)
+                return paginator.get_paginated_response(serializer.data)
+            
+            serializer = FilterLandSerializer(lands, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except ValueError as e:
+            logger.error(f"Validation error occurred: {e}", exc_info=True)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Unexpected error occurred: {e}", exc_info=True)
+            return Response({"detail": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     @swagger_auto_schema(
         operation_summary="Soft delete land",
         operation_description="Soft delete land",
@@ -178,7 +492,7 @@ class LandViewSet(viewsets.ModelViewSet):
     )
     @action(detail=False, methods=['post'])
     @transaction.atomic(savepoint=False)
-    def add_room(self, request: HttpRequest):
+    def add_land(self, request: HttpRequest):
         user = cast(User, request.user)      
         request_serializer = AddLandSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
@@ -209,20 +523,18 @@ class LandViewSet(viewsets.ModelViewSet):
                     location=location,
                     description=validated_data.get("description"),
                     price=validated_data.get("price"),
-                    rental_duration=validated_data.get("rental_duration"),
                     category=validated_data.get("category"),
                     land_size=validated_data.get("land_size"),
                     access_road_type=validated_data.get("access_road_type"),
                     zoning_type=validated_data.get("zoning_type"),
                     utilities=validated_data.get("utilities"),
-                    is_serviced=validated_data.get("is_serviced"),
+                    land_size_unit=validated_data.get("land_size_unit"),
                     agent=agent,
                 )
                 
                 LandImage.save(land=response, images=validated_data.get("images"))
 
-                response_serializer = DetailResponseSerializer({"detail": "Umefanikiwa kupakia taarifa za ardhi"})
-                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+                return Response(data={"detail": "Umefanikiwa kupakia taarifa za ardhi"}, status=status.HTTP_201_CREATED)
             
         except ValidationError as e:
             logger.error(f"Validation error: {e}", exc_info=True)
@@ -267,15 +579,14 @@ class LandViewSet(viewsets.ModelViewSet):
                                     'category': openapi.Schema(type=openapi.TYPE_STRING),
                                     'land_size': openapi.Schema(type=openapi.TYPE_STRING),
                                     'price': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'rental_duration': openapi.Schema(type=openapi.TYPE_STRING),
                                     'access_road_type': openapi.Schema(type=openapi.TYPE_STRING),
                                     'zoning_type': openapi.Schema(type=openapi.TYPE_STRING),
                                     'utilities': openapi.Schema(type=openapi.TYPE_STRING),
-                                    'is_serviced': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                                     'description': openapi.Schema(type=openapi.TYPE_STRING),
                                     'is_active_account': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                                     'status': openapi.Schema(type=openapi.TYPE_STRING),
                                     'is_deleted': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                    'land_size_unit': openapi.Schema(type=openapi.TYPE_STRING),
                                     'listing_date': openapi.Schema(type=openapi.TYPE_STRING),
                                     'location': openapi.Schema(
                                         type=openapi.TYPE_OBJECT,

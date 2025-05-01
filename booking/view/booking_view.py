@@ -403,14 +403,13 @@ class BookingViewSet(viewsets.ModelViewSet):
             return Response(data={"detail": "Property not available for booking"}, status=status.HTTP_403_FORBIDDEN)
         
         try:
-            message = f"""
-            Salamu kwako ndugu {validated_data.get("customer_name")}\n\n
-            Namba ya simu ya mali wa mali ni {property.agent.phone_number}\n\n
-            Kuboresha huduma yetu kwa kujulikana, tafadhali wataarifu ndugu jamaa na marafiki kutembelea {settings.WEB_URL} kuona mali mbali mbali\n\n
-            Kampuni: Kedesh Limited\n
-            Nambari: {siteSettings.support_phone}\n
-            Barua pepe: {siteSettings.support_email}
+            message = f"""\
+            Habari {validated_data.get("customer_name")},\
+            \nMawasiliano ya wakala: {property.agent.phone_number}\
+            \nTazama mali zaidi: {settings.WEB_URL}\
+            \nKampuni: Kedesh Ltd | Simu: {siteSettings.support_phone}\
             """
+
             try:
                 send_sms(message=message, phone_number=validated_data.get("phone_number"))
                 return Response(data={"detail": "Utapokea ujumbe hivi pumbe wenye mawasiliano ya mmiliki"}, status=status.HTTP_200_OK)

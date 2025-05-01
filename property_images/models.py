@@ -64,7 +64,7 @@ class LandImage(models.Model):
     
     class Meta:
         db_table = 'land_images'
-        app_label = 'land_images'
+        app_label = 'property_images'
 
     def __str__(self):
         return str(self.image_id)

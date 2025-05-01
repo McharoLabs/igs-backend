@@ -11,6 +11,7 @@ class AgentAdmin(admin.ModelAdmin):
     ordering = ("-is_active", "first_name")
 
     fieldsets = (
+        (None, {'fields': ('password',)}),
         ("Personal Information", {"fields": ("first_name", "middle_name", "last_name", "gender", "phone_number", "email")}),
         # ("Authentication", {"fields": ("password",)}),
         # ("Profile", {"fields": ("avatar", "is_active")}),
@@ -30,5 +31,10 @@ class AgentAdmin(admin.ModelAdmin):
         return format_html('<a href="/admin/user/agent/{}/change/" class="button" style="padding:5px 10px; background:#3498db; color:#fff; border-radius:5px;">View</a>', obj.user_id)
     
     view_details.short_description = "Actions"
+    
+    def save_model(self, request, obj, form, change):
+        if 'password' in form.changed_data:
+            obj.set_password(form.cleaned_data["password"])
+        super().save_model(request, obj, form, change)
 
 admin.site.register(Agent, AgentAdmin)

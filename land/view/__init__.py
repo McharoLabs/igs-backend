@@ -1,1 +1,1 @@
-from .land_view import LandViewSet
+from .land_view import LandViewSet, LandImagesViewSet
