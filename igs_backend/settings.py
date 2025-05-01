@@ -279,17 +279,17 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = env('STATIC_URL') 
-STATIC_ROOT = os.path.join(BASE_DIR, env('STATIC_ROOT'))
+# STATIC_URL = env('STATIC_URL') 
+# STATIC_ROOT = os.path.join(BASE_DIR, env('STATIC_ROOT'))
 
-MEDIA_URL = env('MEDIA_URL')
-MEDIA_ROOT = os.path.join(BASE_DIR, env('MEDIA_ROOT'))
+# MEDIA_URL = env('MEDIA_URL')
+# MEDIA_ROOT = os.path.join(BASE_DIR, env('MEDIA_ROOT'))
 
-# STATIC_URL = 'https://assets.portal.kedeshlimited.com/static/' 
-# STATIC_ROOT = os.path.join(BASE_DIR, '../../assets.portal.kedeshlimited.com/static')
+STATIC_URL = 'https://assets.portal.kedeshlimited.com/static/' 
+STATIC_ROOT = os.path.join(BASE_DIR, '../../assets.portal.kedeshlimited.com/static')
 
-# MEDIA_URL = 'https://assets.portal.kedeshlimited.com/media/'
-# MEDIA_ROOT = os.path.join(BASE_DIR, '../../assets.portal.kedeshlimited.com/media/')
+MEDIA_URL = 'https://assets.portal.kedeshlimited.com/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, '../../assets.portal.kedeshlimited.com/media/')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
