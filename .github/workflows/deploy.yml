@@ -13,15 +13,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: List repo root contents
-        run: ls -la
-
-      - name: List igs_backend folder contents
-        run: ls -la ./igs_backend
-
-      - name: List kedesh_client folder contents
-        run: ls -la ./kedesh_client
-
       - name: Start SSH agent
         uses: webfactory/ssh-agent@v0.5.3
         with:
@@ -30,25 +21,35 @@ jobs:
       - name: Deploy on DigitalOcean droplet
         run: |
           ssh -o StrictHostKeyChecking=no root@${{ secrets.DO_HOST }} << 'EOF'
-            set -e
-
             echo "Navigating to project directory"
             cd /root/projects/igs-backend
 
-            echo "Stopping running containers"
+            echo "Cleaning working directory..."
+            git reset --hard
+            git clean -fd
+
+            echo "Pulling latest changes..."
+            git pull origin development
+
+            echo "Stopping all containers..."
             docker compose down || true
 
-            echo "Cleaning up dangling images and containers"
-            docker system prune -f || true
+            echo "Removing all containers..."
+            docker rm -f $(docker ps -aq) || true
 
-            echo "Pulling latest code from GitHub"
-            git fetch origin development
-            git reset --hard origin/development
+            echo "Removing all images..."
+            docker rmi -f $(docker images -aq) || true
 
-            echo "Building Docker images"
-            docker compose build
+            echo "Removing all volumes..."
+            docker volume rm $(docker volume ls -q) || true
 
-            echo "Starting containers"
+            echo "Pruning system (remove dangling images, containers, volumes)..."
+            docker system prune -a --volumes -f || true
+
+            echo "Building fresh containers..."
+            docker compose build --no-cache
+
+            echo "Starting services..."
             docker compose up -d
 
             echo "Deployment completed successfully"
