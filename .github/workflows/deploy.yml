@@ -46,12 +46,8 @@ jobs:
             echo "Navigating to project directory"
             cd /root/projects/igs-backend 
 
-            echo "Fetching and resetting to latest code from development branch"
-            git fetch origin development
-            git reset --hard origin/development
-
             echo "Stopping running containers"
-            docker-compose down || true
+            docker compose down || true
 
             echo "Pulling latest backend image"
             docker pull seranise/igs_backend:latest
@@ -60,7 +56,7 @@ jobs:
             docker pull seranise/kedesh_client:latest
 
             echo "Starting containers in detached mode"
-            docker-compose up -d
+            docker compose up -d
 
             echo "Deployment completed successfully"
           EOF

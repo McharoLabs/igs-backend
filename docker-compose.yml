@@ -16,7 +16,7 @@ services:
   backend:
     image: seranise/igs_backend:latest
     container_name: igs-backend
-    command: gunicorn igs_backend.wsgi --bind 0.0.0.0:8000
+    command: sh -c "python manage.py collectstatic --noinput && gunicorn igs_backend.wsgi --bind 0.0.0.0:8000"
     volumes:
       - ./volume/static_files:/app/staticfiles
       - ./volume/media_files:/app/media
