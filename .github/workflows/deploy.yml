@@ -1,4 +1,4 @@
-name: Build and Deploy to DigitalOcean
+name: Deploy to DigitalOcean
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - development
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,26 +21,6 @@ jobs:
 
       - name: List kedesh_client folder contents
         run: ls -la ./kedesh_client
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build backend Docker image
-        run: |
-          docker build -t seranise/igs_backend:latest ./igs_backend
-
-      - name: Build frontend Docker image
-        run: |
-          docker build -t seranise/kedesh_client:latest ./kedesh_client
-
-      - name: Push backend Docker image
-        run: docker push seranise/igs_backend:latest
-
-      - name: Push frontend Docker image
-        run: docker push seranise/kedesh_client:latest
 
       - name: Start SSH agent
         uses: webfactory/ssh-agent@v0.5.3
@@ -58,17 +38,11 @@ jobs:
             echo "Stopping running containers"
             docker compose down || true
 
-            echo "Pulling latest backend image"
-            docker pull seranise/igs_backend:latest
-
             echo "Pulling latest code from GitHub"
-            git pull origin develop
+            git pull origin development
 
-            echo "Pulling latest frontend image"
-            docker pull seranise/kedesh_client:latest
-
-            echo "Starting containers in detached mode"
-            docker compose up -d
+            echo "Building images and starting containers"
+            docker compose up --build -d
 
             echo "Deployment completed successfully"
           EOF

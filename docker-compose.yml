@@ -14,7 +14,9 @@ services:
       - rental
 
   backend:
-    image: seranise/igs_backend:latest
+    build:
+      context: ./igs_backend
+      dockerfile: Dockerfile
     container_name: igs-backend
     command: sh -c "python manage.py collectstatic --noinput && gunicorn igs_backend.wsgi --bind 0.0.0.0:8000"
     volumes:
@@ -29,7 +31,8 @@ services:
       - rental
 
   cron:
-    image: seranise/igs_backend:latest
+    build:
+      context: ./igs_backend
     container_name: igs-cron
     command: >
       sh -c "python manage.py crontab add && crond -f"
@@ -43,7 +46,8 @@ services:
       - rental
 
   frontend1:
-    image: seranise/kedesh_client:latest
+    build:
+      context: ./kedesh_client
     container_name: frontend1
     environment:
       - VITE_NODE_ID=frontend1
