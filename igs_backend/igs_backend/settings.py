@@ -59,9 +59,10 @@ LAND_IMAGE_BASE_URL = env('LAND_IMAGE_BASE_URL')
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'rental.seranise.co.tz',
+    '.seranise.co.tz',
     '127.0.0.1',
 ]
+
 
 
 # ALLOWED_HOSTS = []
@@ -308,6 +309,6 @@ CORS_ALLOWED_ORIGINS = [
 #     "http://172.16.16.60:8080",
 # ]
 
-CSRF_TRUSTED_ORIGINS = ['https://portal.kedeshlimited.com']
+CSRF_TRUSTED_ORIGINS = ['https://rental.seranise.co.tz']
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') 

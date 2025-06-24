@@ -3,7 +3,7 @@ name: Build and Deploy to DigitalOcean
 on:
   push:
     branches:
-      - develop
+      - development
 
 jobs:
   build-and-deploy:
@@ -47,8 +47,8 @@ jobs:
             cd /root/your-project-directory  # <== Update this
 
             echo "Pull latest code (optional)"
-            git fetch origin develop
-            git reset --hard origin/develop
+            git fetch origin development
+            git reset --hard origin/development
 
             echo "Stop running containers"
             docker-compose down || true
