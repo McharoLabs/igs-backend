@@ -1,3 +1,5 @@
+
+
 FROM python:3.12-alpine
 
 # Install system dependencies
@@ -15,12 +17,7 @@ RUN apk update && \
 # Create user and set permissions
 RUN adduser -D appuser
 WORKDIR /app
-
-# Create logs directory and set permissions
-RUN mkdir -p /app/logs && chown -R appuser:appuser /app/logs
-
-# Ensure /app is owned by appuser (including logs)
-RUN chown -R appuser:appuser /app
+RUN chown appuser:appuser /app
 
 # Copy and install requirements
 COPY --chown=appuser:appuser requirements.txt .
