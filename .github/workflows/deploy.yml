@@ -20,7 +20,7 @@ jobs:
 
       - name: Deploy on DigitalOcean droplet
         run: |
-          ssh -o StrictHostKeyChecking=no root@${{ secrets.DO_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no root@${{ secrets.DO_HOST }} << EOF
             echo "Navigating to project directory"
             cd /root/projects/igs-backend
 
@@ -54,9 +54,6 @@ jobs:
 
             echo "Container status:"
             docker compose ps
-
-            echo "Fetching logs:"
-            docker compose logs --no-color || true
 
             echo "Deployment completed successfully"
           EOF
