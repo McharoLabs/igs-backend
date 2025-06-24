@@ -13,6 +13,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: List repo root contents
+        run: ls -la
+
+      - name: List igs_backend folder contents
+        run: ls -la ./igs_backend
+
+      - name: List kedesh_client folder contents
+        run: ls -la ./kedesh_client
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
