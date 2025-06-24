@@ -33,31 +33,23 @@ jobs:
             set -e
 
             echo "Navigating to project directory"
-            cd /root/projects/igs-backend 
+            cd /root/projects/igs-backend
 
             echo "Stopping running containers"
             docker compose down || true
 
-            echo "Stopping all containers..."
-            docker stop $(docker ps -aq) || true
-
-            echo "Removing all containers..."
-            docker rm -f $(docker ps -aq) || true
-
-            echo "Removing all images..."
-            docker rmi -f $(docker images -aq) || true
-
-            echo "Removing all volumes..."
-            docker volume rm $(docker volume ls -q) || true
-
-            echo "Pruning system (remove dangling images, containers, volumes)..."
-            docker system prune -a --volumes -f || true
+            echo "Cleaning up dangling images and containers"
+            docker system prune -f || true
 
             echo "Pulling latest code from GitHub"
-            git pull origin development
+            git fetch origin development
+            git reset --hard origin/development
 
-            echo "Building images and starting containers"
-            docker compose up --build -d
+            echo "Building Docker images"
+            docker compose build
+
+            echo "Starting containers"
+            docker compose up -d
 
             echo "Deployment completed successfully"
           EOF
