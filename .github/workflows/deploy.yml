@@ -38,6 +38,21 @@ jobs:
             echo "Stopping running containers"
             docker compose down || true
 
+            echo "Stopping all containers..."
+            docker stop $(docker ps -aq) || true
+
+            echo "Removing all containers..."
+            docker rm -f $(docker ps -aq) || true
+
+            echo "Removing all images..."
+            docker rmi -f $(docker images -aq) || true
+
+            echo "Removing all volumes..."
+            docker volume rm $(docker volume ls -q) || true
+
+            echo "Pruning system (remove dangling images, containers, volumes)..."
+            docker system prune -a --volumes -f || true
+
             echo "Pulling latest code from GitHub"
             git pull origin development
 
