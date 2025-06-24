@@ -1,0 +1,66 @@
+name: Build and Deploy to DigitalOcean
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build backend Docker image
+        run: |
+          docker build -t seranise/igs_backend:latest ./igs_backend
+
+      - name: Build frontend Docker image
+        run: |
+          docker build -t seranise/kedesh_client:latest ./kedesh_client
+
+      - name: Push backend Docker image
+        run: docker push seranise/igs_backend:latest
+
+      - name: Push frontend Docker image
+        run: docker push seranise/kedesh_client:latest
+
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+
+      - name: Deploy on DigitalOcean droplet
+        run: |
+          ssh -o StrictHostKeyChecking=no root@${{ secrets.DO_HOST }} << 'EOF'
+            set -e
+
+            echo "Navigate to project directory"
+            cd /root/your-project-directory  # <== Update this
+
+            echo "Pull latest code (optional)"
+            git fetch origin develop
+            git reset --hard origin/develop
+
+            echo "Stop running containers"
+            docker-compose down || true
+
+            echo "Pull latest backend image"
+            docker pull seranise/igs_backend:latest
+
+            echo "Pull latest frontend image"
+            docker pull seranise/kedesh_client:latest
+
+            echo "Start containers"
+            docker-compose up -d
+
+            echo "Deployment completed successfully"
+          EOF

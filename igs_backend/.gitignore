@@ -1,0 +1,22 @@
+*.sqlite
+*.sqlite3
+*.db
+*.json
+db.sqlite3
+
+# Ignore environment variables file
+.env
+
+# Allow the example environment file
+!.env.example
+
+# Ignore Python cache files and directories
+__pycache__/
+*.pyc
+
+# Ignore migrations
+*/migrations/*
+!*/migrations/__init__.py
+
+*.log
+logs/
