@@ -19,6 +19,8 @@ RUN adduser -D appuser
 WORKDIR /app
 RUN chown appuser:appuser /app
 
+RUN mkdir -p /app/logs && chmod 777 /app/logs
+
 # Copy and install requirements
 COPY --chown=appuser:appuser requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
