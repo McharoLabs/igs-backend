@@ -1,5 +1,3 @@
-
-
 FROM python:3.12-alpine
 
 # Install system dependencies
@@ -12,7 +10,9 @@ RUN apk update && \
     libffi-dev \
     jpeg-dev \
     zlib-dev \
-    gettext
+    gettext \
+    bash \
+    curl
 
 # Create user and set permissions
 RUN adduser -D appuser
@@ -29,4 +29,5 @@ COPY --chown=appuser:appuser . .
 # Switch to non-root user
 USER appuser
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "university_api.wsgi"]
+# Default command for image (overridden in docker-compose)
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "igs_backend.wsgi"]

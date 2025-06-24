@@ -17,6 +17,7 @@ services:
     build:
       context: ./igs_backend
       dockerfile: Dockerfile
+    image: igs-backend-image
     container_name: igs-backend
     command: sh -c "python manage.py collectstatic --noinput && gunicorn igs_backend.wsgi --bind 0.0.0.0:8000"
     volumes:
@@ -31,8 +32,7 @@ services:
       - rental
 
   cron:
-    build:
-      context: ./igs_backend
+    image: igs-backend-image
     container_name: igs-cron
     command: >
       sh -c "python manage.py crontab add && crond -f"
