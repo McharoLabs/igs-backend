@@ -295,20 +295,19 @@ MEDIA_ROOT = os.path.join(BASE_DIR, env('MEDIA_ROOT'))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
 
 CORS_ALLOWED_ORIGINS = [
-    "https://example.com",
-    "https://sub.example.com",
-    "http://172.16.16.60:8080",
-    "http://127.0.0.1:8080",
-    "http://localhost:8080",
+    "https://rental.seranise.co.tz",
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
 ]
 
-# CSRF_TRUSTED_ORIGINS = [
-#     "http://172.16.16.60:8080",
-# ]
+CSRF_TRUSTED_ORIGINS = [
+    "https://rental.seranise.co.tz",
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+]
 
-CSRF_TRUSTED_ORIGINS = ['https://rental.seranise.co.tz']
 USE_X_FORWARDED_HOST = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') 
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
