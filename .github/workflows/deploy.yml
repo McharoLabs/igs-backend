@@ -1,4 +1,4 @@
-name: Deploy to DigitalOcean
+name: Build and Deploy to DigitalOcean
 
 on:
   push:
@@ -6,12 +6,32 @@ on:
       - development
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build backend Docker image
+        run: |
+          docker build -t seranise/igs_backend:latest ./igs_backend
+
+      - name: Build frontend Docker image
+        run: |
+          docker build -t seranise/kedesh_client:latest ./kedesh_client
+
+      - name: Push backend Docker image
+        run: docker push seranise/igs_backend:latest
+
+      - name: Push frontend Docker image
+        run: docker push seranise/kedesh_client:latest
 
       - name: Start SSH agent
         uses: webfactory/ssh-agent@v0.5.3
@@ -20,25 +40,23 @@ jobs:
 
       - name: Deploy on DigitalOcean droplet
         run: |
-          ssh -o StrictHostKeyChecking=no root@${{ secrets.DO_HOST }} << EOF
-            cd /root/projects/igs-backend
+          ssh -o StrictHostKeyChecking=no root@${{ secrets.DO_HOST }} << 'EOF'
+            set -e
 
-            echo "Pulling latest code from GitHub..."
-            git reset --hard
-            git clean -fd
-            git pull origin development
+            echo "Navigating to project directory"
+            cd /root/projects/igs-backend 
 
-            echo "Stopping containers and removing volumes..."
-            docker compose down -v
+            echo "Pulling latest code from GitHub"
+            git pull origin develop
 
-            echo "Pulling latest images..."
+            echo "Stopping running containers"
+            docker compose down -v || true
+
+            echo "Pulling latest image"
             docker compose pull
 
-            echo "Starting containers..."
+            echo "Starting containers in detached mode"
             docker compose up -d
-
-            echo "Current container status:"
-            docker compose ps
 
             echo "Deployment completed successfully"
           EOF
