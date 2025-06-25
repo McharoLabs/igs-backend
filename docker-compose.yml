@@ -11,7 +11,7 @@ services:
     volumes:
       - ./volume/data/db:/var/lib/postgresql/data
     env_file:
-      - ./kedesh_client/.env
+      - ./kedesh_frontend/.env
     ports:
       - 5433:5432
     networks:
