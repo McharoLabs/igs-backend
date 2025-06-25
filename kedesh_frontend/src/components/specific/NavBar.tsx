@@ -54,7 +54,10 @@ const Nav = ({ onSidebarToggle }: { onSidebarToggle: () => void }) => {
                   ></path>
                 </svg>
               </button>
-              <a href={`${__VITE_SITE_URL__}`} className="flex ms-2 md:me-24">
+              <a
+                href={`https://www.rental.seranise.co.tz/`}
+                className="flex ms-2 md:me-24"
+              >
                 <img src="/logo.png" className="h-8 me-3" alt="Logo" />
                 <span className="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap">
                   Kedesh

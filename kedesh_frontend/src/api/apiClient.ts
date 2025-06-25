@@ -3,7 +3,7 @@ import { ROUTES } from "../routes/routes";
 import { deleteTokenFromLocal } from "../state/auth/AuthSlice";
 
 const apiClient = axios.create({
-  baseURL: __VITE_API_URL__,
+  baseURL: "https://rental.seranise.co.tz/api/v2",
   headers: {
     "Content-Type": "application/json",
   },
