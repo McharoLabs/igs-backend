@@ -25,3 +25,10 @@ dist-ssr
 *.sln
 *.sw?
 
+.env
+
+# .gitignore example
+igs_backend/venv/
+kedesh_client/node_modules/
+
+
