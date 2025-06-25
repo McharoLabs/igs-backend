@@ -47,7 +47,7 @@ jobs:
             cd /root/projects/igs-backend 
 
             echo "Pulling latest code from GitHub"
-            git pull origin develop
+            git pull origin development
 
             echo "Stopping running containers"
             docker compose down -v || true
