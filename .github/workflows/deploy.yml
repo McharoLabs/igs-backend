@@ -25,7 +25,7 @@ jobs:
 
       - name: Build frontend Docker image
         run: |
-          docker build -t seranise/kedesh_client:latest ./kedesh_client
+          docker build -t seranise/kedesh_client:latest ./kedesh_frontend
 
       - name: Push backend Docker image
         run: docker push seranise/igs_backend:latest
