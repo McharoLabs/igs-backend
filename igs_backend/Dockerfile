@@ -10,9 +10,7 @@ RUN apk update && \
     libffi-dev \
     jpeg-dev \
     zlib-dev \
-    gettext \
-    bash \
-    curl
+    gettext
 
 # Create user and set permissions
 RUN adduser -D appuser
@@ -26,8 +24,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY --chown=appuser:appuser . .
 
+# Collect static files
+RUN python manage.py collectstatic --noinput
+
 # Switch to non-root user
 USER appuser
 
-# Default command for image (overridden in docker-compose)
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "igs_backend.wsgi"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "university_api.wsgi"]

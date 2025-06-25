@@ -21,38 +21,23 @@ jobs:
       - name: Deploy on DigitalOcean droplet
         run: |
           ssh -o StrictHostKeyChecking=no root@${{ secrets.DO_HOST }} << EOF
-            echo "Navigating to project directory"
             cd /root/projects/igs-backend
 
-            echo "Cleaning working directory..."
+            echo "Pulling latest code from GitHub..."
             git reset --hard
             git clean -fd
-
-            echo "Pulling latest changes..."
             git pull origin development
 
-            echo "Stopping all containers..."
-            docker compose down || true
+            echo "Stopping containers and removing volumes..."
+            docker compose down -v
 
-            echo "Removing all containers..."
-            docker rm -f \$(docker ps -aq) || true
+            echo "Pulling latest images..."
+            docker compose pull
 
-            echo "Removing all images..."
-            docker rmi -f \$(docker images -aq) || true
+            echo "Starting containers..."
+            docker compose up -d
 
-            echo "Removing all volumes..."
-            docker volume rm \$(docker volume ls -q) || true
-
-            echo "Pruning system (remove dangling images, containers, volumes)..."
-            docker system prune -a --volumes -f || true
-
-            echo "Building fresh containers..."
-            docker compose build --no-cache || exit 1
-
-            echo "Starting services..."
-            docker compose up -d || exit 1
-
-            echo "Container status:"
+            echo "Current container status:"
             docker compose ps
 
             echo "Deployment completed successfully"
