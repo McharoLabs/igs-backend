@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   db:
     image: postgres
@@ -14,9 +16,10 @@ services:
       - rental
 
   backend:
-    image: seranise/igs_backend
+    image: seranise/igs_backend:latest
     container_name: igs-backend
-    command: sh -c "python manage.py collectstatic --noinput && gunicorn igs_backend.wsgi --bind 0.0.0.0:8000"
+    user: root
+    command: sh -c "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn igs_backend.wsgi --bind 0.0.0.0:8000"
     volumes:
       - ./volume/static_files:/app/staticfiles
       - ./volume/media_files:/app/media
@@ -31,8 +34,7 @@ services:
   cron:
     image: seranise/igs_backend:latest
     container_name: igs-cron
-    command: >
-      sh -c "python manage.py crontab add && crond -f"
+    command: sh -c "python manage.py crontab add && crond -f"
     volumes:
       - ./volume/static_files:/app/staticfiles
       - ./volume/media_files:/app/media
@@ -75,39 +77,6 @@ services:
     networks:
       - rental
 
-  # nginx:
-  #   image: nginx:latest
-  #   container_name: nginx
-  #   ports:
-  #     - "80:80"
-  #     # LOCAL
-  #     # - "8080:80"
-  #     - "443:443"
-  #   volumes:
-  #     - ./volume/static_files:/app/staticfiles:ro
-  #     - ./volume/media_files:/app/media:ro
-  #     - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-
-  #     # PRODUCTION Let's Encrypt certs (uncomment to use)
-  #     - /etc/letsencrypt/live/rental.seranise.co.tz/fullchain.pem:/etc/letsencrypt/live/rental.seranise.co.tz/fullchain.pem:ro
-  #     - /etc/letsencrypt/live/rental.seranise.co.tz/privkey.pem:/etc/letsencrypt/live/rental.seranise.co.tz/privkey.pem:ro
-  #     - /etc/letsencrypt/options-ssl-nginx.conf:/etc/letsencrypt/options-ssl-nginx.conf:ro
-  #     - /etc/letsencrypt/ssl-dhparams.pem:/etc/letsencrypt/ssl-dhparams.pem:ro
-
-  #     # LOCAL self-signed certs (commented out)
-  #     # - /home/mcharo/nginx-certs/certs/selfsigned.crt:/etc/letsencrypt/original_certs/fullchain1.pem:ro
-  #     # - /home/mcharo/nginx-certs/certs/selfsigned.key:/etc/letsencrypt/original_certs/privkey1.pem:ro
-
-  #   depends_on:
-  #     - frontend1
-  #     - backend
-  #   networks:
-  #     - rental
-
 networks:
   rental:
     driver: bridge
-
-volumes:
-  static_files:
-  media_files:
