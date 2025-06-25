@@ -10,6 +10,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - ./volume/data/db:/var/lib/postgresql/data
+    env_file:
+      - ./kedesh_client/.env
     ports:
       - 5433:5432
     networks:
