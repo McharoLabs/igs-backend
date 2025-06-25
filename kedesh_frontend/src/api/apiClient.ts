@@ -3,7 +3,7 @@ import { ROUTES } from "../routes/routes";
 import { deleteTokenFromLocal } from "../state/auth/AuthSlice";
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: __VITE_API_URL__,
   headers: {
     "Content-Type": "application/json",
   },

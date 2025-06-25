@@ -1,7 +1,26 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [react()],
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+
+  return {
+    plugins: [react()],
+    define: {
+      __VITE_API_URL__: JSON.stringify(
+        env.VITE_API_URL || process.env.VITE_API_URL
+      ),
+      __VITE_SITE_URL__: JSON.stringify(
+        env.VITE_SITE_URL || process.env.VITE_SITE_URL
+      ),
+      __VITE_NODE_ID__: JSON.stringify(
+        env.VITE_NODE_ID || process.env.VITE_NODE_ID
+      ),
+    },
+    server: {
+      host: "0.0.0.0",
+      port: 5173,
+      strictPort: true,
+    },
+  };
 });
