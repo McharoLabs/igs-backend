@@ -23,6 +23,8 @@ services:
       - ./volume/static_files:/app/staticfiles
       - ./volume/media_files:/app/media
       - ./igs_backend:/app
+    env_file:
+      - ./igs_backend/.env
     ports:
       - 8000:8000
     depends_on:
