@@ -28,8 +28,6 @@
   }
 
   body {
-    background-color: theme(
-      "colors.body"
-    ); /* a very light green-tinted white */
+    background-color: theme("colors.body");
   }
 }
