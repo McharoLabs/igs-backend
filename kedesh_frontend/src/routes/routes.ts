@@ -74,7 +74,7 @@ export const ROUTES: Routes = {
     name: "Dashboard",
   },
   ROOM: {
-    path: "/panel/room",
+    path: "/panel/rooms",
     name: "Room",
   },
   HOUSE: {

@@ -1,7 +1,7 @@
-import { SubmitHandler, useForm, useWatch } from "react-hook-form";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { type SubmitHandler, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { HouseSchema, HouseSchemaType } from "../schemas/AddHouseSchema";
-import Select from "../components/common/Select";
+import { HouseSchema, type HouseSchemaType } from "../schemas/AddHouseSchema";
 import {
   CATEGORY_CHOICES,
   CONDITION_CHOICES,
@@ -11,39 +11,52 @@ import {
   RENTAL_DURATION_CHOICES,
   SECURITY_FEATURES_CHOICES,
 } from "../types/enums";
-import TextInput from "../components/common/InputText";
-import Card from "../components/common/Card";
-import Button from "../components/common/Button";
-import TextArea from "../components/common/TextArea";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, RootState } from "../state/store";
+import type { AppDispatch, RootState } from "../state/store";
 import React from "react";
 import { fetchRegionList, resetRegionState } from "../state/region/regionSlice";
-import Loader from "../components/common/Loader";
 import { fetchRegionDistrictList } from "../state/district/districtSlice";
-import Message from "../components/common/Message";
 import { addHouse, resetAddHouseState } from "../state/house/addHouseSlice";
-import FileInput from "../components/common/FileInput";
 import {
   fetchAccount,
   hideAccountMessage,
 } from "../state/account/accountSlice";
 import useNavigation from "../hooks/useNavigation";
-import Modal from "../components/common/Modal";
-import FreePlanAlert from "../components/specific/FreePlanAlert";
+import {
+  Home,
+  MapPin,
+  Camera,
+  DollarSign,
+  Shield,
+  Thermometer,
+  Bed,
+  Bath,
+  Calendar,
+  FileText,
+  Zap,
+  Building,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+} from "lucide-react";
+import { MdChevronRight } from "react-icons/md";
 
 const AddHouse = () => {
-  const { goToSubscriptionPlan } = useNavigation();
+  const { goToSubscriptionPlan, goToDashboard, navigateToHouse } =
+    useNavigation();
+
   const {
     loading: regionLoading,
     regions,
     error: regionError,
   } = useSelector((state: RootState) => state.region);
+
   const {
     loading: districtLoading,
     districts,
     error: districtError,
   } = useSelector((state: RootState) => state.district);
+
   const {
     detail,
     error: houseError,
@@ -95,7 +108,6 @@ const AddHouse = () => {
 
   React.useEffect(() => {
     dispatch(fetchRegionList());
-
     return () => {
       dispatch(resetRegionState());
     };
@@ -108,32 +120,12 @@ const AddHouse = () => {
   }, [dispatch, selectedRegionId]);
 
   React.useEffect(() => {
-    if (regionError) {
-      setRegionErrorVisible(true);
-    } else {
-      setRegionErrorVisible(false);
-    }
-
-    if (districtError) {
-      setDistrictErrorVisible(true);
-    } else {
-      setDistrictErrorVisible(false);
-    }
-
-    if (houseError) {
-      setHouseErrorVisible(true);
-    } else {
-      setHouseErrorVisible(false);
-    }
-
-    if (detail) {
-      setHouseSuccessVisible(true);
-    } else {
-      setHouseSuccessVisible(false);
-    }
+    setRegionErrorVisible(!!regionError);
+    setDistrictErrorVisible(!!districtError);
+    setHouseErrorVisible(!!houseError);
+    setHouseSuccessVisible(!!detail);
   }, [regionError, districtError, houseError, detail]);
 
-  // Close handlers
   const handleRegionClose = () => setRegionErrorVisible(false);
   const handleDistrictClose = () => setDistrictErrorVisible(false);
   const handleHouseErrorClose = () => setHouseErrorVisible(false);
@@ -152,222 +144,503 @@ const AddHouse = () => {
   };
 
   return (
-    <div className="">
-      <Loader
-        loading={loadingAccount}
-        label="Inatafuta tarifa za akaunti yako"
-      />
+    <div className="min-h-screen bg-body py-8 px-4">
+      <div className="max-w-6xl mx-auto px-5 py-14">
+        {/* Loading Overlays */}
+        {(loadingAccount ||
+          regionLoading ||
+          districtLoading ||
+          houseLoading) && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 flex items-center space-x-3">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <span className="text-secondary font-medium">
+                {loadingAccount && "Inatafuta tarifa za akaunti yako"}
+                {regionLoading && "Inatafuta mikoa"}
+                {districtLoading && "Inatafuta wilaya"}
+                {houseLoading && "Inapakia taarifa za mali"}
+              </span>
+            </div>
+          </div>
+        )}
 
-      <Modal isOpen={showMessage} className="bg-blue-100">
-        <FreePlanAlert
-          onSubmit={goToSubscriptionPlan}
-          onCancel={() => dispatch(hideAccountMessage())}
-        />
-      </Modal>
+        {/* Free Plan Modal */}
+        {showMessage && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-blue-50 rounded-lg p-6 max-w-md mx-4">
+              <div className="text-center">
+                <AlertCircle className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-secondary mb-2">
+                  Mpango wa Bure
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Bonyeza hapa kupata mpango wa malipo
+                </p>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={goToSubscriptionPlan}
+                    className="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-dark transition-colors"
+                  >
+                    Nenda Mpango
+                  </button>
+                  <button
+                    onClick={() => dispatch(hideAccountMessage())}
+                    className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
+                  >
+                    Funga
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-      <Loader loading={regionLoading} label="Inatafuta mikoa" />
-      <Loader loading={districtLoading} label="Inatafuta wilaya" />
-      <Loader loading={houseLoading} label="Inapakia taarifa za mali" />
+        {/* Error Messages */}
+        {isRegionErrorVisible && regionError && (
+          <div className="fixed top-4 right-4 bg-red-50 border border-red-200 rounded-lg p-4 max-w-md z-40">
+            <div className="flex items-start">
+              <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3" />
+              <div className="flex-1">
+                <p className="text-red-800">{regionError}</p>
+                <button
+                  onClick={handleRegionClose}
+                  className="text-red-600 hover:text-red-800 text-sm mt-1"
+                >
+                  Funga
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
-      {/* Region Error */}
-      {isRegionErrorVisible && regionError && (
-        <Message
-          type="error"
-          isOpen={isRegionErrorVisible}
-          message={regionError}
-          buttons={[{ label: "Hairisha", onClick: handleRegionClose }]}
-          xClose={handleRegionClose}
-        />
-      )}
+        {isDistrictErrorVisible && districtError && (
+          <div className="fixed top-4 right-4 bg-red-50 border border-red-200 rounded-lg p-4 max-w-md z-40">
+            <div className="flex items-start">
+              <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3" />
+              <div className="flex-1">
+                <p className="text-red-800">{districtError}</p>
+                <button
+                  onClick={handleDistrictClose}
+                  className="text-red-600 hover:text-red-800 text-sm mt-1"
+                >
+                  Funga
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
-      {/* District Error */}
-      {isDistrictErrorVisible && districtError && (
-        <Message
-          type="error"
-          isOpen={isDistrictErrorVisible}
-          message={districtError}
-          xClose={handleDistrictClose}
-        />
-      )}
+        {isHouseErrorVisible && houseError && (
+          <div className="fixed top-4 right-4 bg-red-50 border border-red-200 rounded-lg p-4 max-w-md z-40">
+            <div className="flex items-start">
+              <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3" />
+              <div className="flex-1">
+                <h4 className="font-medium text-red-800">Akaunti</h4>
+                <p className="text-red-700">{houseError}</p>
+                <button
+                  onClick={handleHouseErrorClose}
+                  className="text-red-600 hover:text-red-800 text-sm mt-1"
+                >
+                  Funga
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
-      {/* House Error */}
-      {isHouseErrorVisible && houseError && (
-        <Message
-          type="error"
-          title="Akaunti"
-          isOpen={isHouseErrorVisible}
-          message={houseError}
-          xClose={handleHouseErrorClose}
-        />
-      )}
+        {/* Success Message */}
+        {isHouseSuccessVisible && detail && (
+          <div className="fixed top-4 right-4 bg-green-50 border border-green-200 rounded-lg p-4 max-w-md z-40">
+            <div className="flex items-start">
+              <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 mr-3" />
+              <div className="flex-1">
+                <h4 className="font-medium text-green-800">Kupakia nyumba</h4>
+                <p className="text-green-700">{detail}</p>
+                <button
+                  onClick={handleHouseSuccessClose}
+                  className="text-green-600 hover:text-green-800 text-sm mt-1"
+                >
+                  Funga
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
-      {/* House Success */}
-      {isHouseSuccessVisible && detail && (
-        <Message
-          type="success"
-          title="Kupakia nyumba"
-          isOpen={isHouseSuccessVisible}
-          message={detail || ""}
-          xClose={handleHouseSuccessClose}
-        />
-      )}
+        {/* Main Form */}
+        <nav className="text-sm text-primary flex items-center space-x-1 mb-8">
+          <span
+            className="hover:underline hover:text-blue-600 cursor-pointer"
+            onClick={() => goToDashboard()}
+          >
+            Dashibodi
+          </span>
+          <MdChevronRight className="text-lg" />
+          <span
+            className="hover:underline hover:text-blue-600 cursor-pointer"
+            onClick={() => navigateToHouse()}
+          >
+            Mali Zangu
+          </span>
+          <MdChevronRight className="text-lg" />
+          <span className="font-medium text-gray-600">Ongeza Mali</span>
+        </nav>
 
-      <Card className="w-full">
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-            <Select
-              label="Aina"
-              options={CATEGORY_CHOICES}
-              register={register("category")}
-              error={errors.category?.message}
-            />
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-primary to-primary-light p-6">
+            <div className="flex items-center space-x-3">
+              <Home className="h-8 w-8 text-white" />
+              <div>
+                <h1 className="text-2xl font-bold text-white">
+                  Ongeza Mali Yako
+                </h1>
+                <p className="text-green-100">
+                  Jaza fomu hii kuongeza mali yako
+                </p>
+              </div>
+            </div>
+          </div>
 
-            <Select
-              label="Hali"
-              options={CONDITION_CHOICES}
-              register={register("condition")}
-              error={errors.condition?.message}
-            />
+          <form onSubmit={handleSubmit(onSubmit)} className="p-6">
+            {/* Basic Information Section */}
+            <div className="mb-8">
+              <div className="flex items-center space-x-2 mb-4">
+                <Building className="h-5 w-5 text-primary" />
+                <h2 className="text-lg font-semibold text-secondary">
+                  Taarifa za Msingi
+                </h2>
+              </div>
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <FormSelect
+                  label="Aina"
+                  icon={<Home className="h-4 w-4" />}
+                  options={CATEGORY_CHOICES}
+                  register={register("category")}
+                  error={errors.category?.message}
+                />
+                <FormSelect
+                  label="Hali"
+                  icon={<Shield className="h-4 w-4" />}
+                  options={CONDITION_CHOICES}
+                  register={register("condition")}
+                  error={errors.condition?.message}
+                />
+                <FormInput
+                  label="Bei ya Nyumba"
+                  type="number"
+                  placeholder="Bei"
+                  icon={<DollarSign className="h-4 w-4" />}
+                  register={register("price")}
+                  error={errors.price?.message}
+                />
+                {selectedCategory === CATEGORY.RENTAL && (
+                  <FormSelect
+                    label="Muda wa Kukodi"
+                    icon={<Calendar className="h-4 w-4" />}
+                    options={RENTAL_DURATION_CHOICES}
+                    register={register("rental_duration")}
+                    error={errors.rental_duration?.message}
+                  />
+                )}
+              </div>
+            </div>
 
-            <Select
-              label="Vipengele vya Usalama"
-              options={SECURITY_FEATURES_CHOICES}
-              register={register("security_features")}
-              error={errors.security_features?.message}
-            />
+            {/* Property Details Section */}
+            <div className="mb-8">
+              <div className="flex items-center space-x-2 mb-4">
+                <Bed className="h-5 w-5 text-primary" />
+                <h2 className="text-lg font-semibold text-secondary">
+                  Maelezo ya Mali
+                </h2>
+              </div>
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <FormInput
+                  label="Idadi ya Vyumba vya Kulala"
+                  type="number"
+                  placeholder="Vyumba vya kulala"
+                  icon={<Bed className="h-4 w-4" />}
+                  register={register("total_bed_room")}
+                  error={errors.total_bed_room?.message}
+                />
+                <FormInput
+                  label="Idadi ya sebure"
+                  type="number"
+                  placeholder="Sebure"
+                  icon={<Building className="h-4 w-4" />}
+                  register={register("total_dining_room")}
+                  error={errors.total_dining_room?.message}
+                />
+                <FormInput
+                  label="Idadi ya Vyumba vya Bafu"
+                  type="number"
+                  placeholder="Vyumba vya bafu"
+                  icon={<Bath className="h-4 w-4" />}
+                  register={register("total_bath_room")}
+                  error={errors.total_bath_room?.message}
+                />
+                <FormSelect
+                  label="Vipengele vya Usalama"
+                  icon={<Shield className="h-4 w-4" />}
+                  options={SECURITY_FEATURES_CHOICES}
+                  register={register("security_features")}
+                  error={errors.security_features?.message}
+                />
+                <FormSelect
+                  label="Mfumo wa Kupasha joto au Baridi"
+                  icon={<Thermometer className="h-4 w-4" />}
+                  options={HEATING_COOLING_SYSTEM_CHOICES}
+                  register={register("heating_cooling_system")}
+                  error={errors.heating_cooling_system?.message}
+                />
+                <FormSelect
+                  label="Hali ya Samani"
+                  icon={<Home className="h-4 w-4" />}
+                  options={FURNISHING_STATUS_CHOICES}
+                  register={register("furnishing_status")}
+                  error={errors.furnishing_status?.message}
+                />
+              </div>
+            </div>
 
-            <Select
-              label="Mfumo wa Kupasha joto au Baridi"
-              options={HEATING_COOLING_SYSTEM_CHOICES}
-              register={register("heating_cooling_system")}
-              error={errors.heating_cooling_system?.message}
-            />
+            {/* Location Section */}
+            <div className="mb-8">
+              <div className="flex items-center space-x-2 mb-4">
+                <MapPin className="h-5 w-5 text-primary" />
+                <h2 className="text-lg font-semibold text-secondary">Mahali</h2>
+              </div>
+              <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
+                <FormSelect
+                  label="Chagua Mikoa"
+                  icon={<MapPin className="h-4 w-4" />}
+                  options={regions.map((region) => ({
+                    value: region.region_id,
+                    label: region.name,
+                  }))}
+                  register={register("region")}
+                  error={errors.region?.message}
+                />
+                <FormSelect
+                  label="Chagua Wilaya"
+                  icon={<MapPin className="h-4 w-4" />}
+                  options={districts.map((district) => ({
+                    value: district.district_id,
+                    label: district.name,
+                  }))}
+                  register={register("district")}
+                  error={errors.district?.message}
+                />
+                <FormInput
+                  label="Kata"
+                  placeholder="Kata"
+                  icon={<MapPin className="h-4 w-4" />}
+                  register={register("ward")}
+                  error={errors.ward?.message}
+                />
+                <FormInput
+                  label="Mtaa"
+                  placeholder="Mtaa"
+                  icon={<MapPin className="h-4 w-4" />}
+                  register={register("street")}
+                  error={errors.street?.message}
+                />
+              </div>
+            </div>
 
-            <Select
-              label="Hali ya Samani"
-              options={FURNISHING_STATUS_CHOICES}
-              register={register("furnishing_status")}
-              error={errors.furnishing_status?.message}
-            />
-
-            <TextInput
-              label="Bei ya Nyumba"
-              type="number"
-              placeholder="Bei"
-              register={register("price")}
-              error={errors.price?.message}
-            />
-
-            {selectedCategory === CATEGORY.RENTAL && (
-              <Select
-                label="Muda wa Kukodi"
-                options={RENTAL_DURATION_CHOICES}
-                register={register("rental_duration")}
-                error={errors.rental_duration?.message}
+            {/* Images Section */}
+            <div className="mb-8">
+              <div className="flex items-center space-x-2 mb-4">
+                <Camera className="h-5 w-5 text-primary" />
+                <h2 className="text-lg font-semibold text-secondary">Picha</h2>
+              </div>
+              <FormFileInput
+                label="Picha za Mali (4-6 picha)"
+                register={register("images")}
+                error={errors.images?.message}
+                multiple={true}
               />
-            )}
+            </div>
 
-            <TextInput
-              label="Idadi ya Vyumba vya Kulala"
-              type="number"
-              placeholder="Vyumba vya kulala"
-              register={register("total_bed_room")}
-              error={errors.total_bed_room?.message}
-            />
+            {/* Description Section */}
+            <div className="mb-8">
+              <div className="flex items-center space-x-2 mb-4">
+                <FileText className="h-5 w-5 text-primary" />
+                <h2 className="text-lg font-semibold text-secondary">
+                  Maelezo
+                </h2>
+              </div>
+              <div className="grid md:grid-cols-1 gap-4">
+                <FormTextArea
+                  label="Maelezo ya Mali"
+                  placeholder="Maelezo ya nyumba"
+                  register={register("description")}
+                  error={errors.description?.message}
+                />
+                <div className="grid md:grid-cols-2 gap-4">
+                  <FormTextArea
+                    label="Huduma (mfano: maji, umeme...)"
+                    placeholder="Huduma"
+                    icon={<Zap className="h-4 w-4" />}
+                    register={register("utilities")}
+                    error={errors.utilities?.message}
+                  />
+                  <FormTextArea
+                    label="Vitu vilivyo karibu (mfano: shule...)"
+                    placeholder="Vitu vilivyo karibu"
+                    icon={<Building className="h-4 w-4" />}
+                    register={register("nearby_facilities")}
+                    error={errors.nearby_facilities?.message}
+                  />
+                </div>
+              </div>
+            </div>
 
-            <TextInput
-              label="Idadi ya sebure"
-              type="number"
-              placeholder="Sebure"
-              register={register("total_dining_room")}
-              error={errors.total_dining_room?.message}
-            />
-
-            <TextInput
-              label="Idadi ya Vyumba vya Bafu"
-              type="number"
-              placeholder="Vyumba vya bafu"
-              register={register("total_bath_room")}
-              error={errors.total_bath_room?.message}
-            />
-
-            <Select
-              options={regions.map((region) => ({
-                value: region.region_id,
-                label: region.name,
-              }))}
-              label="Chagua Mikoa"
-              register={register("region")}
-              error={errors.region?.message}
-            />
-
-            <Select
-              options={districts.map((district) => ({
-                value: district.district_id,
-                label: district.name,
-              }))}
-              label="Chagua Wilaya"
-              register={register("district")}
-              error={errors.district?.message}
-            />
-
-            <TextInput
-              label="Kata"
-              placeholder="Kata"
-              register={register("ward")}
-              error={errors.ward?.message}
-            />
-
-            <TextInput
-              label="Mtaa"
-              placeholder="Mtaa"
-              register={register("street")}
-              error={errors.street?.message}
-            />
-
-            <FileInput
-              label="Picha"
-              error={errors.images?.message}
-              register={register("images")}
-              multiple={true}
-            />
-
-            <TextArea
-              register={register("description")}
-              label="Maelezo"
-              placeholder="Maelezo ya nyumba"
-              error={errors.description?.message}
-            />
-
-            <TextArea
-              register={register("utilities")}
-              label="Huduma, mfano, maji, Umeme..."
-              placeholder="Huduma"
-              error={errors.utilities?.message}
-            />
-
-            <TextArea
-              register={register("nearby_facilities")}
-              label="Vitu vilivyo karibu, mfano, Shule..."
-              placeholder="Vitu vilivyo karibu"
-              error={errors.nearby_facilities?.message}
-            />
-          </div>
-
-          <div className="mt-6">
-            <Button
-              disabled={houseLoading}
-              isLoading={houseLoading}
-              type="submit"
-              className="w-full"
-            >
-              Tuma
-            </Button>
-          </div>
-        </form>
-      </Card>
+            {/* Submit Button */}
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={houseLoading}
+                className="bg-gradient-to-r from-primary to-primary-light text-white px-8 py-3 rounded-lg font-semibold hover:from-primary-dark hover:to-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                {houseLoading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>Inatuma...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-5 w-5" />
+                    <span>Tuma Mali</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   );
 };
+
+// Form Components
+const FormInput = ({ label, icon, register, error, ...props }: any) => (
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-secondary">
+      <div className="flex items-center space-x-2">
+        {icon && <span className="text-primary">{icon}</span>}
+        <span>{label}</span>
+      </div>
+    </label>
+    <input
+      {...register}
+      {...props}
+      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors ${
+        error ? "border-red-300 bg-red-50" : "border-gray-300 bg-white"
+      }`}
+    />
+    {error && (
+      <p className="text-red-600 text-sm flex items-center space-x-1">
+        <AlertCircle className="h-4 w-4" />
+        <span>{error}</span>
+      </p>
+    )}
+  </div>
+);
+
+const FormSelect = ({ label, icon, options, register, error }: any) => (
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-secondary">
+      <div className="flex items-center space-x-2">
+        {icon && <span className="text-primary">{icon}</span>}
+        <span>{label}</span>
+      </div>
+    </label>
+    <select
+      {...register}
+      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors ${
+        error ? "border-red-300 bg-red-50" : "border-gray-300 bg-white"
+      }`}
+    >
+      <option value="">Chagua...</option>
+      {options.map((option: any) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+    {error && (
+      <p className="text-red-600 text-sm flex items-center space-x-1">
+        <AlertCircle className="h-4 w-4" />
+        <span>{error}</span>
+      </p>
+    )}
+  </div>
+);
+
+const FormTextArea = ({ label, icon, register, error, ...props }: any) => (
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-secondary">
+      <div className="flex items-center space-x-2">
+        {icon && <span className="text-primary">{icon}</span>}
+        <span>{label}</span>
+      </div>
+    </label>
+    <textarea
+      {...register}
+      {...props}
+      rows={4}
+      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors resize-none ${
+        error ? "border-red-300 bg-red-50" : "border-gray-300 bg-white"
+      }`}
+    />
+    {error && (
+      <p className="text-red-600 text-sm flex items-center space-x-1">
+        <AlertCircle className="h-4 w-4" />
+        <span>{error}</span>
+      </p>
+    )}
+  </div>
+);
+
+const FormFileInput = ({ label, register, error, multiple }: any) => (
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-secondary">
+      <div className="flex items-center space-x-2">
+        <Camera className="h-4 w-4 text-primary" />
+        <span>{label}</span>
+      </div>
+    </label>
+    <div
+      className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+        error
+          ? "border-red-300 bg-red-50"
+          : "border-gray-300 hover:border-primary"
+      }`}
+    >
+      <Camera className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+      <input
+        {...register}
+        type="file"
+        multiple={multiple}
+        accept="image/*"
+        className="hidden"
+        id="file-upload"
+      />
+      <label
+        htmlFor="file-upload"
+        className="cursor-pointer text-primary hover:text-primary-dark font-medium"
+      >
+        Bonyeza hapa kupakia picha
+      </label>
+      <p className="text-gray-500 text-sm mt-2">PNG, JPG hadi 8MB kila moja</p>
+    </div>
+    {error && (
+      <p className="text-red-600 text-sm flex items-center space-x-1">
+        <AlertCircle className="h-4 w-4" />
+        <span>{error}</span>
+      </p>
+    )}
+  </div>
+);
 
 export default AddHouse;
