@@ -25,7 +25,6 @@ jobs:
           --health-retries 5
 
     env:
-      # Backend test DB env
       DB_NAME: test_db
       DB_USER: test_user
       DB_PASSWORD: test_pass
@@ -35,11 +34,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # -------- Load .env.example for Backend Tests --------
-      - name: Load environment variables from .env.example
-        uses: c-py/action-dotenv-to-setenv@v1
-        with:
-          env-file: ./igs_backend/.env.example
+      # ✅ Load environment variables from .env.example
+      - name: Export environment variables from .env.example
+        run: |
+          set -a
+          source ./igs_backend/.env.example
+          set +a
 
       # -------- Backend Test Steps --------
       - name: Set up Python
@@ -58,13 +58,6 @@ jobs:
           until pg_isready -h localhost -p 5432; do sleep 1; done
 
       - name: Run backend migrations and tests
-        env:
-          SECRET_KEY: dummy_secret
-          DEBUG: "True"
-          DB_NAME: test_db
-          DB_USER: test_user
-          DB_PASSWORD: test_pass
-          DB_HOST: localhost
         run: |
           cd igs_backend
           python manage.py migrate
