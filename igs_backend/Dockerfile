@@ -31,4 +31,4 @@ COPY --chown=appuser:appuser . .
 USER appuser
 
 # Your CMD
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "wsgi"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "igs_backend.wsgi:application"]
