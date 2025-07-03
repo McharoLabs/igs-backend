@@ -58,6 +58,8 @@ LAND_IMAGE_BASE_URL = env('LAND_IMAGE_BASE_URL')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+CORS_ALLOW_CREDENTIALS = True
+
 ALLOWED_HOSTS = [
     'rental.seranise.co.tz',
     'www.rental.seranise.co.tz',
@@ -69,6 +71,8 @@ ALLOWED_HOSTS = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "https://rental.seranise.co.tz",
+    "https://www.rental.seranise.co.tz", 
 ]
 
 CSRF_TRUSTED_ORIGINS = [
