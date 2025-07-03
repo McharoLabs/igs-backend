@@ -63,6 +63,7 @@ ALLOWED_HOSTS = [
     'www.rental.seranise.co.tz',
     'seranise.co.tz',
     'www.seranise.co.tz',
+    '207.154.214.152',
     '127.0.0.1',
 ]
 
