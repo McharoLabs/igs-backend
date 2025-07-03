@@ -199,7 +199,7 @@ const AddHouse = () => {
         {isRegionErrorVisible && regionError && (
           <div className="fixed top-4 right-4 bg-red-50 border border-red-200 rounded-lg p-4 max-w-md z-40">
             <div className="flex items-start">
-              <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3" />
+              <AlertCircle className="h-5 w-5 text-red-500 mt-14 mr-3" />
               <div className="flex-1">
                 <p className="text-red-800">{regionError}</p>
                 <button
@@ -216,7 +216,7 @@ const AddHouse = () => {
         {isDistrictErrorVisible && districtError && (
           <div className="fixed top-4 right-4 bg-red-50 border border-red-200 rounded-lg p-4 max-w-md z-40">
             <div className="flex items-start">
-              <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3" />
+              <AlertCircle className="h-5 w-5 text-red-500 mt-14 mr-3" />
               <div className="flex-1">
                 <p className="text-red-800">{districtError}</p>
                 <button
@@ -233,7 +233,7 @@ const AddHouse = () => {
         {isHouseErrorVisible && houseError && (
           <div className="fixed top-4 right-4 bg-red-50 border border-red-200 rounded-lg p-4 max-w-md z-40">
             <div className="flex items-start">
-              <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3" />
+              <AlertCircle className="h-5 w-5 text-red-500 mt-14 mr-3" />
               <div className="flex-1">
                 <h4 className="font-medium text-red-800">Akaunti</h4>
                 <p className="text-red-700">{houseError}</p>
@@ -252,7 +252,7 @@ const AddHouse = () => {
         {isHouseSuccessVisible && detail && (
           <div className="fixed top-4 right-4 bg-green-50 border border-green-200 rounded-lg p-4 max-w-md z-40">
             <div className="flex items-start">
-              <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 mr-3" />
+              <CheckCircle className="h-5 w-5 text-green-500 mt-14 mr-3" />
               <div className="flex-1">
                 <h4 className="font-medium text-green-800">Kupakia nyumba</h4>
                 <p className="text-green-700">{detail}</p>
@@ -267,7 +267,6 @@ const AddHouse = () => {
           </div>
         )}
 
-        {/* Main Form */}
         <nav className="text-sm text-primary flex items-center space-x-1 mb-8">
           <span
             className="hover:underline hover:text-blue-600 cursor-pointer"
@@ -285,6 +284,8 @@ const AddHouse = () => {
           <MdChevronRight className="text-lg" />
           <span className="font-medium text-gray-600">Ongeza Mali</span>
         </nav>
+
+        {/* Main Form */}
 
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           {/* Header */}

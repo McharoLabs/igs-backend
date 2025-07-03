@@ -3,7 +3,7 @@ import { MdChevronRight } from "react-icons/md";
 import RoomTable from "../components/table/RoomTable";
 
 const Room = () => {
-  const { goToDashboard } = useNavigation();
+  const { goToDashboard, goToAddRoom } = useNavigation();
 
   return (
     <div className="flex flex-col items-center justify-center">
@@ -23,7 +23,10 @@ const Room = () => {
         {/* Page Title & Button */}
         <div className="mt-8 flex justify-between items-center">
           <h1 className="text-xl font-bold text-gray-800">Orodha ya Vyumba</h1>
-          <button className="bg-primary hover:primary-shadow text-white px-4 py-2 rounded-md shadow">
+          <button
+            className="bg-primary hover:primary-shadow text-white px-4 py-2 rounded-md shadow"
+            onClick={goToAddRoom}
+          >
             Ongeza Chumba
           </button>
         </div>
