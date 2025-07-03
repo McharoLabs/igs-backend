@@ -5,8 +5,7 @@ from requests.exceptions import Timeout, RequestException
 from typing import Optional, Dict, Any, Union
 from tenacity import retry, stop_after_attempt, wait_exponential
 import logging
-from igs_backend.igs_backend import settings
-
+from igs_backend import settings
 
 logger = logging.getLogger(__name__)
 

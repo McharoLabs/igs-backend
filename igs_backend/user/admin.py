@@ -1,7 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from igs_backend.igs_backend import settings
 from .models import Agent
 
 class AgentAdmin(admin.ModelAdmin):

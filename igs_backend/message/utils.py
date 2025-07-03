@@ -3,7 +3,7 @@ from typing import Any, List, Dict
 
 from requests import Response
 from account.models import Account
-from igs_backend.igs_backend import settings
+from igs_backend import settings
 from settings.models import SiteSettings
 from subscription_plan.models import SubscriptionPlan
 from user.model.agent import Agent

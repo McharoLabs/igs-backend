@@ -2,7 +2,7 @@ from django.http import HttpResponse
 from requests import Response
 from rest_framework import permissions
 from rest_framework.decorators import action
-from igs_backend.igs_backend import settings
+from igs_backend import settings
 from message.utils import SmsService
 from payment.enums.payment_type import PAYMENT_TYPE
 from payment.models import Payment

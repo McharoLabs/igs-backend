@@ -9,7 +9,7 @@ from rest_framework.decorators import action
 from drf_yasg.utils import swagger_auto_schema
 import logging
 
-from igs_backend.igs_backend import settings
+from igs_backend import settings
 from user.models import User
 from user.serializers import RequestAvatarSerializer
 

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from igs_backend.igs_backend import settings
+from igs_backend import settings
 from land.models import Land
 from location.serializers import ResponseLocationSerializer
 

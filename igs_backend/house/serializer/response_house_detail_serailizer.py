@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from house.models import House
-from igs_backend.igs_backend import settings
+from igs_backend import settings
 from location.serializers import ResponseLocationSerializer
 from user.serializer.response_agent_serializer import ResponseAgentSerializer
 

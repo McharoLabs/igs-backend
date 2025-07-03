@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from igs_backend.igs_backend import settings
+from igs_backend import settings
 from location.serializers import ResponseLocationSerializer
 from room.models import Room
 
