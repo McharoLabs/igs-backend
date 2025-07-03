@@ -56,6 +56,7 @@ jobs:
           source ./igs_backend/.env.example
           set +a
           cd igs_backend
+          python manage.py makemigrations
           python manage.py migrate
           python manage.py test
 
@@ -72,6 +73,9 @@ jobs:
 
       - name: Run frontend tests
         run: |
+          set -a
+            source ./kedesh_frontend/.env.example
+            set +a
           cd kedesh_frontend
           npm test
 
