@@ -69,10 +69,10 @@ ALLOWED_HOSTS = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+]
+
+CSRF_TRUSTED_ORIGINS = [
     "https://rental.seranise.co.tz",
-    "https://www.rental.seranise.co.tz",
-    "https://seranise.co.tz",
-    "https://www.seranise.co.tz",
 ]
 
 # Application definition
@@ -304,3 +304,7 @@ STATICFILES_DIRS = [
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Proxy configuration
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
