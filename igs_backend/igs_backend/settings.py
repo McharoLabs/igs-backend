@@ -59,14 +59,20 @@ LAND_IMAGE_BASE_URL = env('LAND_IMAGE_BASE_URL')
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    '.seranise.co.tz',
+    'rental.seranise.co.tz',
+    'www.rental.seranise.co.tz',
+    'seranise.co.tz',
+    'www.seranise.co.tz',
     '127.0.0.1',
 ]
 
-
-
-# ALLOWED_HOSTS = []
-
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "https://rental.seranise.co.tz",
+    "https://www.rental.seranise.co.tz",
+    "https://seranise.co.tz",
+    "https://www.seranise.co.tz",
+]
 
 # Application definition
 
@@ -101,6 +107,11 @@ INSTALLED_APPS = [
 
 # AUTH_USER_MODEL = "authentication.User"
 AUTH_USER_MODEL = "user.User"
+
+AUTHENTICATION_BACKENDS = [
+    'authentication.backends.EmailPhoneBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -284,32 +295,11 @@ STATIC_ROOT = os.path.join(BASE_DIR, env('STATIC_ROOT'))
 MEDIA_URL = env('MEDIA_URL')
 MEDIA_ROOT = os.path.join(BASE_DIR, env('MEDIA_ROOT'))
 
-# STATIC_URL = 'https://assets.portal.kedeshlimited.com/static/' 
-# STATIC_ROOT = os.path.join(BASE_DIR, '../../assets.portal.kedeshlimited.com/static')
-
-# MEDIA_URL = 'https://assets.portal.kedeshlimited.com/media/'
-# MEDIA_ROOT = os.path.join(BASE_DIR, '../../assets.portal.kedeshlimited.com/media/')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-CORS_ALLOW_ALL_ORIGINS = False
-
-CORS_ALLOWED_ORIGINS = [
-    "https://rental.seranise.co.tz",
-    "http://127.0.0.1:5173",
-    "http://localhost:5173",
-]
-
-CSRF_TRUSTED_ORIGINS = [
-    "https://rental.seranise.co.tz",
-    "http://127.0.0.1:5173",
-    "http://localhost:5173",
-]
-
-USE_X_FORWARDED_HOST = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-CORS_ALLOW_CREDENTIALS = True
