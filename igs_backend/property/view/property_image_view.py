@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from igs_backend import settings
+from igs_backend.igs_backend import settings
 from property.models import Property
 from property.serializers import RequestPropertyImageSerializer
 from property_images.models import PropertyImage

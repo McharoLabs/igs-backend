@@ -18,7 +18,7 @@ from django.db import transaction, DatabaseError
 from django.core.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import PageNumberPagination
 
-from igs_backend import settings
+from igs_backend.igs_backend import settings
 from land.enums.land_type import LAND_TYPE
 from land.model.land import Land
 from land.serializers import FilterLandSerializer, AddLandSerializer, ResponseAgentLandSerializer, RequestLandAgentInfoSerializer

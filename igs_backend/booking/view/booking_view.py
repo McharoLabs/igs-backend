@@ -12,7 +12,7 @@ from drf_yasg import openapi
 from booking.models import Booking
 from booking.serializers import ResponseBookingSerailizer
 from booking.serializers import  RequestBookingSerializer
-from igs_backend import settings
+from igs_backend.igs_backend import settings
 from message.utils import send_sms
 from payment.enums.payment_type import PAYMENT_TYPE
 from payment.models import Payment

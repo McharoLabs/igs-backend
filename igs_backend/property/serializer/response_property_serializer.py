@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from house.models import House
-from igs_backend import settings
+from igs_backend.igs_backend import settings
 from location.serializer.response_location_serializer import ResponseLocationSerializer
 from property.models import Property
 from room.models import Room

@@ -7,9 +7,9 @@ from rest_framework.response import Response
 from authentication.custom_permissions import *
 from rest_framework.decorators import action
 from drf_yasg.utils import swagger_auto_schema
-from igs_backend import settings
 import logging
 
+from igs_backend.igs_backend import settings
 from user.models import User
 from user.serializers import RequestAvatarSerializer
 

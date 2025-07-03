@@ -11,7 +11,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 import logging
 
-from igs_backend import settings
+from igs_backend.igs_backend import settings
 from payment.enums.payment_type import PAYMENT_TYPE
 from payment.models import Payment
 from shared.serializer.detail_response_serializer import DetailResponseSerializer

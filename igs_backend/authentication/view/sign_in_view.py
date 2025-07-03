@@ -14,7 +14,6 @@ class SignInAPIView(generics.GenericAPIView):
     permission_classes = (permissions.AllowAny,)
     serializer_class = SignInSerializer
     authentication_classes = [
-            authentication.SessionAuthentication,
             TokenAuthentication,JWTAuthentication
         ]  
     

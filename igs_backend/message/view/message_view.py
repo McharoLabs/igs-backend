@@ -1,6 +1,6 @@
 import logging
 from typing import Any
-from igs_backend import settings
+from igs_backend.igs_backend import settings
 from payment.enums.payment_type import PAYMENT_TYPE
 from payment.models import Payment
 from user.model.agent import Agent
