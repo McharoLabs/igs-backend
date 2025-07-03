@@ -47,7 +47,7 @@ import {
 import { MdChevronRight } from "react-icons/md";
 
 const AddRoom = () => {
-  const { goToSubscriptionPlan, goToProfile, goToDashboard, goToRoomList } =
+  const { goToSubscriptionPlan, goToProfile, goToDashboard, navigateToRoom } =
     useNavigation();
 
   const {
@@ -229,7 +229,7 @@ const AddRoom = () => {
 
         {/* Success Message */}
         {detail && (
-          <div className="fixed top-4 right-4 bg-green-50 border border-green-200 rounded-lg p-4 max-w-md z-40">
+          <div className="fixed top-24 right-4 bg-green-50 border border-green-200 rounded-lg p-4 max-w-md z-60">
             <div className="flex items-start">
               <CheckCircle className="h-5 w-5 text-green-500 mt-14 mr-3" />
               <div className="flex-1">
@@ -258,7 +258,7 @@ const AddRoom = () => {
           <MdChevronRight className="text-lg" />
           <span
             className="hover:underline hover:text-blue-600 cursor-pointer"
-            onClick={() => goToRoomList()}
+            onClick={() => navigateToRoom()}
           >
             Mali Zangu
           </span>

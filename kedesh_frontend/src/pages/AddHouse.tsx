@@ -197,9 +197,9 @@ const AddHouse = () => {
 
         {/* Error Messages */}
         {isRegionErrorVisible && regionError && (
-          <div className="fixed top-4 right-4 bg-red-50 border border-red-200 rounded-lg p-4 max-w-md z-40">
+          <div className="fixed top-24 right-4 bg-red-50 border border-red-200 rounded-lg p-4 max-w-md z-40">
             <div className="flex items-start">
-              <AlertCircle className="h-5 w-5 text-red-500 mt-14 mr-3" />
+              <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3" />
               <div className="flex-1">
                 <p className="text-red-800">{regionError}</p>
                 <button
@@ -214,9 +214,9 @@ const AddHouse = () => {
         )}
 
         {isDistrictErrorVisible && districtError && (
-          <div className="fixed top-4 right-4 bg-red-50 border border-red-200 rounded-lg p-4 max-w-md z-40">
+          <div className="fixed top-24 right-4 bg-red-50 border border-red-200 rounded-lg p-4 max-w-md z-40">
             <div className="flex items-start">
-              <AlertCircle className="h-5 w-5 text-red-500 mt-14 mr-3" />
+              <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3" />
               <div className="flex-1">
                 <p className="text-red-800">{districtError}</p>
                 <button
@@ -231,9 +231,9 @@ const AddHouse = () => {
         )}
 
         {isHouseErrorVisible && houseError && (
-          <div className="fixed top-4 right-4 bg-red-50 border border-red-200 rounded-lg p-4 max-w-md z-40">
+          <div className="fixed top-24 right-4 bg-red-50 border border-red-200 rounded-lg p-4 max-w-md z-40">
             <div className="flex items-start">
-              <AlertCircle className="h-5 w-5 text-red-500 mt-14 mr-3" />
+              <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3" />
               <div className="flex-1">
                 <h4 className="font-medium text-red-800">Akaunti</h4>
                 <p className="text-red-700">{houseError}</p>
@@ -250,9 +250,9 @@ const AddHouse = () => {
 
         {/* Success Message */}
         {isHouseSuccessVisible && detail && (
-          <div className="fixed top-4 right-4 bg-green-50 border border-green-200 rounded-lg p-4 max-w-md z-40">
+          <div className="fixed top-24 right-4 bg-green-50 border border-green-200 rounded-lg p-4 max-w-md z-40">
             <div className="flex items-start">
-              <CheckCircle className="h-5 w-5 text-green-500 mt-14 mr-3" />
+              <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 mr-3" />
               <div className="flex-1">
                 <h4 className="font-medium text-green-800">Kupakia nyumba</h4>
                 <p className="text-green-700">{detail}</p>
