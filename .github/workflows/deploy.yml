@@ -34,13 +34,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ✅ Load environment variables from .env.example
-      - name: Export environment variables from .env.example
-        run: |
-          set -a
-          source ./igs_backend/.env.example
-          set +a
-
       # -------- Backend Test Steps --------
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -57,8 +50,11 @@ jobs:
         run: |
           until pg_isready -h localhost -p 5432; do sleep 1; done
 
-      - name: Run backend migrations and tests
+      - name: Run backend migrations and tests with env loaded
         run: |
+          set -a
+          source ./igs_backend/.env.example
+          set +a
           cd igs_backend
           python manage.py migrate
           python manage.py test
