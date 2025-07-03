@@ -1,4 +1,4 @@
-name: Build and Deploy to DigitalOcean
+name: Build, Test and Deploy to DigitalOcean
 
 on:
   push:
@@ -6,13 +6,75 @@ on:
       - development
 
 jobs:
-  build-and-deploy:
+  build-test-and-deploy:
     runs-on: ubuntu-latest
+
+    services:
+      # Optional: PostgreSQL service for backend tests if needed
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # Backend test environment variables
+      DB_NAME: test_db
+      DB_USER: test_user
+      DB_PASSWORD: test_pass
+      DB_HOST: localhost
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # ----------- Backend Test Steps -----------
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install backend dependencies
+        run: |
+          cd igs_backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Wait for Postgres to be ready
+        run: |
+          until pg_isready -h localhost -p 5432; do sleep 1; done
+
+      - name: Run backend migrations and tests
+        run: |
+          cd igs_backend
+          python manage.py migrate
+          python manage.py test
+
+      # ----------- Frontend Test Steps -----------
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies
+        run: |
+          cd kedesh_frontend
+          npm install
+
+      - name: Run frontend tests
+        run: |
+          cd kedesh_frontend
+          npm test
+
+      # ----------- Docker Build and Push -----------
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -20,12 +82,10 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build backend Docker image
-        run: |
-          docker build -t seranise/igs_backend:latest ./igs_backend
+        run: docker build -t seranise/igs_backend:latest ./igs_backend
 
       - name: Build frontend Docker image
-        run: |
-          docker build -t seranise/kedesh_client:latest ./kedesh_frontend
+        run: docker build -t seranise/kedesh_client:latest ./kedesh_frontend
 
       - name: Push backend Docker image
         run: docker push seranise/igs_backend:latest
@@ -33,6 +93,7 @@ jobs:
       - name: Push frontend Docker image
         run: docker push seranise/kedesh_client:latest
 
+      # ----------- Deployment -----------
       - name: Start SSH agent
         uses: webfactory/ssh-agent@v0.5.3
         with:
