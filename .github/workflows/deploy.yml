@@ -58,6 +58,7 @@ jobs:
           cd igs_backend
           python manage.py makemigrations
           python manage.py migrate
+          python manage.py collectstatic --noinput
           python manage.py test
 
       # -------- Frontend Test Steps --------
@@ -77,7 +78,7 @@ jobs:
             source ./kedesh_frontend/.env.example
             set +a
           cd kedesh_frontend
-          npm test
+          npm run test:coverage
 
       # -------- Docker Build and Push --------
       - name: Log in to Docker Hub
