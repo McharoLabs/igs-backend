@@ -53,10 +53,18 @@ jobs:
           until pg_isready -h localhost -p 5432; do sleep 1; done
 
       - name: Run backend migrations and tests
+        env:
+          SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          DEBUG: "True"
+          DB_NAME: test_db
+          DB_USER: test_user
+          DB_PASSWORD: test_pass
+          DB_HOST: localhost
         run: |
           cd igs_backend
           python manage.py migrate
           python manage.py test
+
 
       # ----------- Frontend Test Steps -----------
       - name: Set up Node.js
