@@ -1,0 +1,26 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Environment files
+.env
+.env.*
+
+# Git & VCS
+.git
+.gitignore
+
+# Development & Test
+tests
+*.log
+
+# Media & Static
+media
+staticfiles
+logs
+
+# IDE / Editor files
+.vscode
+.idea
+*.swp
