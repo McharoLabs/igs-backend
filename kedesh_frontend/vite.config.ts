@@ -26,6 +26,15 @@ export default defineConfig(({ mode }) => {
       environment: "jsdom",
       globals: true,
       setupFiles: "./src/setupTests.ts",
+      coverage: {
+        all: false,
+        include: ["src/components/**/*.tsx"],
+        reporter: ["text", "html"],
+        lines: 50,
+        functions: 50,
+        branches: 50,
+        statements: 50,
+      },
     },
   };
 });
