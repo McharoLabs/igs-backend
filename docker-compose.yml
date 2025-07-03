@@ -24,7 +24,6 @@ services:
     volumes:
       - ./volume/static_files:/app/staticfiles
       - ./volume/media_files:/app/media
-      - ./igs_backend:/app
     env_file:
       - ./igs_backend/.env
     ports:
@@ -41,7 +40,6 @@ services:
     volumes:
       - ./volume/static_files:/app/staticfiles
       - ./volume/media_files:/app/media
-      - ./igs_backend:/app
     depends_on:
       - backend
     networks:
