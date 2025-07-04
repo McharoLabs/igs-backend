@@ -111,9 +111,10 @@ jobs:
             set -e
             cd /root/projects/igs-backend
             git pull origin development
-            docker compose down -v || true
+            docker-compose down -v || true
             docker system prune -a --volumes -f
-            docker compose pull
-            docker compose up -d
+            docker-compose pull
+            docker-compose up -d
             echo "Deployment completed successfully"
           EOF
+
